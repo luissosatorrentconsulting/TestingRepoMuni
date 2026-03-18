@@ -13,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Support\Colors\Color;
 
 class ActivoResource extends Resource
 {
@@ -109,14 +110,66 @@ class ActivoResource extends Resource
                     ->label('Fecha')
                     ->date('d/m/Y')
                     ->sortable(),
+                    Tables\Columns\TextColumn::make('asignaciones.empleado.nombre_completo')
+    ->label('Responsable Actual')
+    ->placeholder('En Bodega')
+    ->listWithLineBreaks()
+    ->limitList(1),
             ])
-            ->filters([
+       ->filters([
                 Tables\Filters\SelectFilter::make('categoria')
                     ->relationship('categoria', 'nombre')
                     ->label('Filtrar por Categoría'),
+
+              
+                Tables\Filters\TernaryFilter::make('es_baja')
+                    ->label('Estado del Bien')
+                    ->placeholder('Activos Disponibles')
+                    ->trueLabel('Ver solo Bajas')
+                    ->falseLabel('Ver solo Activos Vigentes')
+                    ->queries(
+                        true: fn ($query) => $query->where('es_baja', true),
+                        false: fn ($query) => $query->where('es_baja', false),
+                        blank: fn ($query) => $query->where('es_baja', false),
+                    ),
             ])
-            ->actions([
+     ->actions([
                 Tables\Actions\EditAction::make(),
+
+               
+                Tables\Actions\Action::make('baja')
+                    ->label('Dar de Baja')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Finalizar vida útil del bien')
+                    ->form([
+                        Forms\Components\Textarea::make('motivo_baja')
+                            ->label('Motivo de la baja')
+                            ->required(),
+                    ])
+                    ->action(function (Activo $record, array $data): void {
+                        $record->update([
+                            'es_baja' => true,
+                            'descripcion' => $record->descripcion . " (DE BAJA: " . $data['motivo_baja'] . ")",
+                        ]);
+                    })
+                    ->visible(fn (Activo $record): bool => !$record->es_baja),
+                   
+Tables\Actions\Action::make('reactivar')
+    ->label('Reactivar Bien')
+    ->icon('heroicon-o-arrow-path')
+    ->color('success')
+    ->requiresConfirmation()
+    ->modalHeading('Reincorporar al Inventario')
+    ->modalDescription('¿Desea marcar este bien como activo nuevamente?')
+    ->action(function (Activo $record): void {
+        $record->update([
+            'es_baja' => false,
+   
+        ]);
+    })
+    ->visible(fn (Activo $record): bool => $record->es_baja), 
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
