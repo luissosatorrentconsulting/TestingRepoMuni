@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // <--- AGREGADO
+use Illuminate\Database\Eloquent\Relations\HasMany;  // <--- AGREGADO
 
 class Activo extends Model
 {
@@ -16,8 +18,7 @@ class Activo extends Model
     // ESTA ES LA MAGIA MULTI-MUNI
     protected static function booted()
     {
-        // 1. Filtro Global: Cada vez que alguien pida ver activos, 
-        // Laravel solo traerá los de la muni configurada.
+        // 1. Filtro Global: Laravel solo traerá los de la muni configurada.
         static::addGlobalScope('muni', function (Builder $builder) {
             $builder->where('municipalidad_id', config('app.muni_id', 1));
         });
@@ -35,6 +36,18 @@ class Activo extends Model
         });
     }
 
-    public function municipalidad() { return $this->belongsTo(Municipalidad::class); }
-    public function categoria() { return $this->belongsTo(Categoria::class); }
+    public function municipalidad(): BelongsTo 
+    { 
+        return $this->belongsTo(Municipalidad::class); 
+    }
+
+    public function categoria(): BelongsTo 
+    { 
+        return $this->belongsTo(Categoria::class); 
+    }
+    
+    public function asignaciones(): HasMany
+    {
+        return $this->hasMany(Asignacion::class);
+    }
 }

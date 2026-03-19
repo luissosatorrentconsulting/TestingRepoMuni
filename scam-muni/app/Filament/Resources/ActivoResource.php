@@ -3,7 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ActivoResource\Pages;
+// AGREGAMOS ESTA LÍNEA PARA QUE ENCUENTRE EL RELATION MANAGER
+use App\Filament\Resources\ActivoResource\RelationManagers; 
 use App\Models\Activo;
+use App\Models\Municipalidad;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,6 +17,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Support\Colors\Color;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 
 class ActivoResource extends Resource
 {
@@ -21,7 +26,6 @@ class ActivoResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
     
-    // Personalización en español
     protected static ?string $modelLabel = 'Activo';
     protected static ?string $pluralModelLabel = 'Inventario de Activos';
     protected static ?string $navigationLabel = 'Inventario de Activos';
@@ -30,7 +34,6 @@ class ActivoResource extends Resource
     {
         return $form
             ->schema([
-                // SECCIÓN 1: CLASIFICACIÓN (Multi-Muni Invisible)
                 Forms\Components\Section::make('Clasificación')
                     ->description('Defina la categoría del bien.')
                     ->schema([
@@ -45,10 +48,9 @@ class ActivoResource extends Resource
                             ->label('Código Generado (Auto)')
                             ->placeholder('Se generará al guardar')
                             ->disabled()
-                            ->dehydrated(false), // No enviamos este campo, el modelo lo genera
+                            ->dehydrated(false), 
                     ])->columns(2),
 
-                // SECCIÓN 2: DETALLES TÉCNICOS
                 Forms\Components\Section::make('Detalles del Bien')
                     ->schema([
                         TextInput::make('descripcion')
@@ -61,7 +63,6 @@ class ActivoResource extends Resource
                         TextInput::make('serie')->label('No. de Serie'),
                     ])->columns(3),
 
-                // SECCIÓN 3: DATOS FINANCIEROS
                 Forms\Components\Section::make('Información de Adquisición')
                     ->schema([
                         TextInput::make('costo_original')
@@ -110,33 +111,50 @@ class ActivoResource extends Resource
                     ->label('Fecha')
                     ->date('d/m/Y')
                     ->sortable(),
-                    Tables\Columns\TextColumn::make('asignaciones.empleado.nombre_completo')
-    ->label('Responsable Actual')
-    ->placeholder('En Bodega')
-    ->listWithLineBreaks()
-    ->limitList(1),
+
+                Tables\Columns\TextColumn::make('asignaciones.empleado.nombre_completo')
+                    ->label('Responsable Actual')
+                    ->placeholder('En Bodega')
+                    ->listWithLineBreaks()
+                    ->limitList(1),
             ])
-       ->filters([
+            ->filters([
                 Tables\Filters\SelectFilter::make('categoria')
                     ->relationship('categoria', 'nombre')
                     ->label('Filtrar por Categoría'),
 
-              
                 Tables\Filters\TernaryFilter::make('es_baja')
                     ->label('Estado del Bien')
                     ->placeholder('Activos Disponibles')
                     ->trueLabel('Ver solo Bajas')
                     ->falseLabel('Ver solo Activos Vigentes')
                     ->queries(
-                        true: fn ($query) => $query->where('es_baja', true),
-                        false: fn ($query) => $query->where('es_baja', false),
-                        blank: fn ($query) => $query->where('es_baja', false),
+                        true: fn (Builder $query) => $query->where('es_baja', true),
+                        false: fn (Builder $query) => $query->where('es_baja', false),
+                        blank: fn (Builder $query) => $query->where('es_baja', false),
                     ),
             ])
-     ->actions([
+            ->actions([
                 Tables\Actions\EditAction::make(),
 
-               
+                Tables\Actions\Action::make('historial')
+                    ->label('Historial')
+                    ->icon('heroicon-o-clock')
+                    ->color('info')
+                    ->action(function (Activo $record) {
+                        $muni = Municipalidad::find(config('app.muni_id', 1));
+                        $record->load('asignaciones.empleado');
+
+                        $pdf = Pdf::loadView('pdf.historial_activo', [
+                            'activo' => $record,
+                            'muni' => $muni,
+                        ]);
+
+                        return response()->streamDownload(function () use ($pdf) {
+                            echo $pdf->stream();
+                        }, "Historial-{$record->codigo_etiqueta}.pdf");
+                    }),
+
                 Tables\Actions\Action::make('baja')
                     ->label('Dar de Baja')
                     ->icon('heroicon-o-trash')
@@ -156,32 +174,50 @@ class ActivoResource extends Resource
                     })
                     ->visible(fn (Activo $record): bool => !$record->es_baja),
                    
-Tables\Actions\Action::make('reactivar')
-    ->label('Reactivar Bien')
-    ->icon('heroicon-o-arrow-path')
-    ->color('success')
-    ->requiresConfirmation()
-    ->modalHeading('Reincorporar al Inventario')
-    ->modalDescription('¿Desea marcar este bien como activo nuevamente?')
-    ->action(function (Activo $record): void {
-        $record->update([
-            'es_baja' => false,
-   
-        ]);
-    })
-    ->visible(fn (Activo $record): bool => $record->es_baja), 
+                Tables\Actions\Action::make('reactivar')
+                    ->label('Reactivar Bien')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function (Activo $record): void {
+                        $record->update([
+                            'es_baja' => false,
+                        ]);
+                    })
+                    ->visible(fn (Activo $record): bool => $record->es_baja), 
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('exportarPdf')
+                    ->label('Reporte de Inventario')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->action(function (Tables\Contracts\HasTable $livewire) {
+                        $activos = $livewire->getFilteredTableQuery()->get();
+                        
+                        $muni = Municipalidad::find(config('app.muni_id', 1));
+
+                        $pdf = Pdf::loadView('pdf.inventario_general', [
+                            'activos' => $activos,
+                            'muni' => $muni,
+                        ]);
+
+                        return response()->streamDownload(function () use ($pdf) {
+                            echo $pdf->stream();
+                        }, "Inventario-" . now()->format('d-m-Y') . ".pdf");
+                    }),
             ]);
     }
 
+    // SOLO UNA VEZ getRelations()
     public static function getRelations(): array
     {
         return [
-            // Aquí agregaremos el historial de asignaciones en la Fase 3
+            RelationManagers\AsignacionesRelationManager::class,
         ];
     }
 

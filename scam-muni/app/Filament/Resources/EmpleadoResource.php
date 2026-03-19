@@ -3,19 +3,22 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EmpleadoResource\Pages;
+// AGREGAMOS ESTE USE QUE ES EL QUE FALTA
+use App\Filament\Resources\EmpleadoResource\RelationManagers; 
 use App\Models\Empleado;
+use App\Models\Municipalidad;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Components\TextInput;
-use Filament\Tables\Columns\TextColumn;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class EmpleadoResource extends Resource
 {
     protected static ?string $model = Empleado::class;
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+    
     protected static ?string $modelLabel = 'Empleado';
     protected static ?string $pluralModelLabel = 'Empleados';
 
@@ -25,17 +28,17 @@ class EmpleadoResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Información del Personal')
                     ->schema([
-                        TextInput::make('nombre_completo')
+                        Forms\Components\TextInput::make('nombre_completo')
                             ->label('Nombre Completo')
                             ->required(),
-                        TextInput::make('dpi')
+                        Forms\Components\TextInput::make('dpi')
                             ->label('DPI')
                             ->required()
                             ->unique(ignoreRecord: true),
-                        TextInput::make('puesto')
-                            ->label('Puesto / Cargo')
+                        Forms\Components\TextInput::make('puesto')
+                            ->label('Cargo o Puesto')
                             ->required(),
-                    ])->columns(2),
+                    ])->columns(2)
             ]);
     }
 
@@ -43,12 +46,53 @@ class EmpleadoResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('nombre_completo')->label('Nombre')->searchable(),
-                TextColumn::make('dpi')->label('DPI'),
-                TextColumn::make('puesto')->label('Puesto'),
+                Tables\Columns\TextColumn::make('nombre_completo')
+                    ->label('Nombre')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('dpi')
+                    ->label('DPI'),
+                Tables\Columns\TextColumn::make('puesto')
+                    ->label('Cargo'),
             ])
-            ->actions([Tables\Actions\EditAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                
+                // ACCIÓN: Generar el PDF de resguardo
+                Tables\Actions\Action::make('resguardo')
+                    ->label('Imprimir Resguardo')
+                    ->icon('heroicon-o-document-text')
+                    ->color('warning')
+                    ->action(function (Empleado $record) {
+                        $muni = Municipalidad::find(config('app.muni_id', 1));
+                        
+                        // Obtenemos solo las asignaciones de activos que NO han sido dados de baja
+                        $asignaciones = $record->asignaciones()
+                            ->whereHas('activo', function($query) {
+                                $query->where('es_baja', false);
+                            })
+                            ->with('activo')
+                            ->get();
+
+                        $pdf = Pdf::loadView('pdf.resguardo_empleado', [
+                            'empleado' => $record,
+                            'asignaciones' => $asignaciones,
+                            'muni' => $muni,
+                        ]);
+
+                        return response()->streamDownload(function () use ($pdf) {
+                            echo $pdf->stream();
+                        }, "Resguardo-{$record->nombre_completo}.pdf");
+                    }),
+            ]);
+    }
+
+    // REGISTRO DE LA RELACIÓN PARA VER LOS BIENES EN PANTALLA
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\AsignacionesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

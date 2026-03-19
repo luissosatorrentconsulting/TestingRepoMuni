@@ -25,4 +25,8 @@ class Empleado extends Model
     }
 
     public function municipalidad() { return $this->belongsTo(Municipalidad::class); }
+    public function asignaciones()
+{
+    return $this->hasMany(Asignacion::class);
+}
 }

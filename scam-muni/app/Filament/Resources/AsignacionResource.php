@@ -9,6 +9,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Municipalidad;
 
 class AsignacionResource extends Resource
 {
@@ -66,12 +68,32 @@ class AsignacionResource extends Resource
                 Tables\Columns\TextColumn::make('empleado.nombre_completo')->label('Responsable'),
                 Tables\Columns\TextColumn::make('fecha_asignacion')->label('Fecha')->date('d/m/Y'),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
+         ->actions([
+    Tables\Actions\EditAction::make(),
+    
+    Tables\Actions\Action::make('pdf')
+        ->label('Imprimir Acta')
+        ->icon('heroicon-o-printer')
+        ->color('info')
+        ->action(function (Asignacion $record) {
+            $muni = Municipalidad::find(config('app.muni_id', 1));
+            
+            $pdf = Pdf::loadView('pdf.acta_asignacion', [
+                'asignacion' => $record,
+                'muni' => $muni,
+            ]);
+
+            return response()->streamDownload(function () use ($pdf) {
+                echo $pdf->stream();
+            }, "Acta-{$record->id}.pdf");
+        }),
+        
+])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
+
+            
     }
 
     public static function getPages(): array
