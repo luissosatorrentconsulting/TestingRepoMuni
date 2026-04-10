@@ -11,6 +11,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\FileUpload;
 
 class MunicipalidadResource extends Resource
 {
@@ -33,6 +34,15 @@ class MunicipalidadResource extends Resource
                     ->required(),
                 TextInput::make('nit')
                     ->label('NIT'),
+                    TextInput::make('departamento')
+    ->label('Departamento Geográfico')
+    ->placeholder('Ej. QUETZALTENANGO')
+    ->required(),
+FileUpload::make('logo')
+    ->label('Logo Institucional (PNG)')
+    ->image() // Valida que sea imagen
+    ->directory('logos-muni') // Se guardará en storage/app/public/logos-muni
+    ->visibility('public'),
             ]);
     }
 

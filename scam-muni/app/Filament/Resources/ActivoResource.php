@@ -51,17 +51,37 @@ class ActivoResource extends Resource
                             ->dehydrated(false), 
                     ])->columns(2),
 
-                Forms\Components\Section::make('Detalles del Bien')
-                    ->schema([
-                        TextInput::make('descripcion')
-                            ->label('Descripción Completa')
-                            ->required()
-                            ->columnSpanFull(),
+Forms\Components\Section::make('Detalles del Bien')
+    ->schema([
+        TextInput::make('descripcion')
+            ->label('Descripción Completa')
+            ->required()
+            ->columnSpanFull(),
 
-                        TextInput::make('marca')->label('Marca'),
-                        TextInput::make('modelo')->label('Modelo'),
-                        TextInput::make('serie')->label('No. de Serie'),
-                    ])->columns(3),
+        TextInput::make('marca')->label('Marca'),
+        TextInput::make('modelo')->label('Modelo'),
+        TextInput::make('serie')->label('No. de Serie'),
+
+        // Agregados correctamente dentro de la sección
+        Forms\Components\Select::make('estado')
+            ->label('Estado Físico')
+            ->options([
+                'BUENO' => 'Bueno',
+                'REGULAR' => 'Regular',
+                'MALO' => 'Malo',
+            ])
+            ->default('BUENO'),
+
+        TextInput::make('color')
+            ->label('Color'),
+
+        Forms\Components\Textarea::make('observaciones_activo')
+            ->label('Observaciones del Bien')
+            ->columnSpanFull(), // Para que use todo el ancho
+    ])->columns(3),
+
+
+                    
 
                 Forms\Components\Section::make('Información de Adquisición')
                     ->schema([
@@ -137,24 +157,15 @@ class ActivoResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
 
-                Tables\Actions\Action::make('historial')
-                    ->label('Historial')
-                    ->icon('heroicon-o-clock')
-                    ->color('info')
-                    ->action(function (Activo $record) {
-                        $muni = Municipalidad::find(config('app.muni_id', 1));
-                        $record->load('asignaciones.empleado');
-
-                        $pdf = Pdf::loadView('pdf.historial_activo', [
-                            'activo' => $record,
-                            'muni' => $muni,
-                        ]);
-
-                        return response()->streamDownload(function () use ($pdf) {
-                            echo $pdf->stream();
-                        }, "Historial-{$record->codigo_etiqueta}.pdf");
-                    }),
-
+               Tables\Actions\Action::make('historial')
+    ->label('Historial')
+    ->icon('heroicon-o-clock')
+    ->color('info')
+    // Esto genera el link dinámico a la ruta que acabas de crear
+    ->url(fn (Activo $record): string => route('activos.historial.pdf', $record))
+    // Esto obliga al navegador a abrirlo en una pestaña nueva
+    ->openUrlInNewTab(),
+                
                 Tables\Actions\Action::make('baja')
                     ->label('Dar de Baja')
                     ->icon('heroicon-o-trash')
@@ -229,4 +240,5 @@ class ActivoResource extends Resource
             'edit' => Pages\EditActivo::route('/{record}/edit'),
         ];
     }
+    
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Municipalidad extends Model
 {
     protected $table = 'municipalidades'; // Indicamos el nombre correcto de la tabla
-    protected $fillable = ['codigo_muni', 'nombre', 'nit']; // Campos que se pueden llenar
+    protected $fillable = ['codigo_muni', 'nombre', 'nit', 'departamento', 'logo'];
 
     public function activos()
     {

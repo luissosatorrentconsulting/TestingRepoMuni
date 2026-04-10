@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\MunicipalidadResource\Pages;
+namespace App\Filament\Resources\PuestoResource\Pages;
 
-use App\Filament\Resources\MunicipalidadResource;
+use App\Filament\Resources\PuestoResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditMunicipalidad extends EditRecord
+class EditPuesto extends EditRecord
 {
-    protected static string $resource = MunicipalidadResource::class;
+    protected static string $resource = PuestoResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -16,6 +16,7 @@ class EditMunicipalidad extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
     protected function getRedirectUrl(): string
 {
     return $this->getResource()::getUrl('index');

@@ -50,4 +50,11 @@ class Activo extends Model
     {
         return $this->hasMany(Asignacion::class);
     }
+
+
+public function historial()
+{
+    return $this->hasMany(MovimientoActivo::class, 'activo_id')->orderBy('fecha_movimiento', 'asc');
+}
+
 }

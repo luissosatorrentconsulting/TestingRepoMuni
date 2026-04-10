@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EmpleadoResource\Pages;
-// AGREGAMOS ESTE USE QUE ES EL QUE FALTA
 use App\Filament\Resources\EmpleadoResource\RelationManagers; 
 use App\Models\Empleado;
 use App\Models\Municipalidad;
@@ -18,7 +17,6 @@ class EmpleadoResource extends Resource
 {
     protected static ?string $model = Empleado::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
-    
     protected static ?string $modelLabel = 'Empleado';
     protected static ?string $pluralModelLabel = 'Empleados';
 
@@ -26,19 +24,32 @@ class EmpleadoResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Información del Personal')
+                Forms\Components\Section::make('Información Personal')
                     ->schema([
                         Forms\Components\TextInput::make('nombre_completo')
-                            ->label('Nombre Completo')
-                            ->required(),
+                            ->required()
+                            ->maxLength(255),
                         Forms\Components\TextInput::make('dpi')
                             ->label('DPI')
-                            ->required()
-                            ->unique(ignoreRecord: true),
-                        Forms\Components\TextInput::make('puesto')
-                            ->label('Cargo o Puesto')
                             ->required(),
-                    ])->columns(2)
+                        
+                        // INTEGRACIÓN: El nuevo selector de Puesto Jerárquico
+                        Forms\Components\Select::make('puesto_id')
+                            ->relationship('puesto_oficial', 'nombre') // Usamos el nombre de la relación del modelo
+                            ->label('Puesto Oficial (Estructura)')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->createOptionForm([ 
+                                Forms\Components\TextInput::make('nombre')->required(),
+                                Forms\Components\Select::make('departamento_id')
+                                    ->relationship('departamento', 'nombre')
+                                    ->required(),
+                            ]),
+                            
+                        Forms\Components\Toggle::make('activo')
+                            ->default(true),
+                    ])->columns(2),
             ]);
     }
 
@@ -52,13 +63,16 @@ class EmpleadoResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('dpi')
                     ->label('DPI'),
-                Tables\Columns\TextColumn::make('puesto')
-                    ->label('Cargo'),
+                
+                // CAMBIO: Ahora mostramos el nombre desde la relación
+                Tables\Columns\TextColumn::make('puesto_oficial.nombre')
+                    ->label('Cargo Oficial')
+                    ->description(fn (Empleado $record): string => $record->puesto_oficial?->departamento?->nombre ?? 'Sin Departamento'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 
-                // ACCIÓN: Generar el PDF de resguardo
+                // TU ACCIÓN ORIGINAL: Generar el PDF (Intacta)
                 Tables\Actions\Action::make('resguardo')
                     ->label('Imprimir Resguardo')
                     ->icon('heroicon-o-document-text')
@@ -66,7 +80,6 @@ class EmpleadoResource extends Resource
                     ->action(function (Empleado $record) {
                         $muni = Municipalidad::find(config('app.muni_id', 1));
                         
-                        // Obtenemos solo las asignaciones de activos que NO han sido dados de baja
                         $asignaciones = $record->asignaciones()
                             ->whereHas('activo', function($query) {
                                 $query->where('es_baja', false);
@@ -87,10 +100,10 @@ class EmpleadoResource extends Resource
             ]);
     }
 
-    // REGISTRO DE LA RELACIÓN PARA VER LOS BIENES EN PANTALLA
     public static function getRelations(): array
     {
         return [
+            // TU RELATION MANAGER ORIGINAL: (Intacto)
             RelationManagers\AsignacionesRelationManager::class,
         ];
     }

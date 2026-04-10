@@ -9,4 +9,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateMunicipalidad extends CreateRecord
 {
     protected static string $resource = MunicipalidadResource::class;
+    protected function getRedirectUrl(): string
+{
+    return $this->getResource()::getUrl('index');
+}
 }

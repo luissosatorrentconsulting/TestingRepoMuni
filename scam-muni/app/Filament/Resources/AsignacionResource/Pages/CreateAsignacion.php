@@ -9,4 +9,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateAsignacion extends CreateRecord
 {
     protected static string $resource = AsignacionResource::class;
+    protected function getRedirectUrl(): string
+{
+    return $this->getResource()::getUrl('index');
+}
 }
