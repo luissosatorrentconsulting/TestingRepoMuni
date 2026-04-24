@@ -6,6 +6,7 @@ use App\Filament\Resources\EmpleadoResource\Pages;
 use App\Filament\Resources\EmpleadoResource\RelationManagers; 
 use App\Models\Empleado;
 use App\Models\Municipalidad;
+use App\Models\Activo;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -33,9 +34,8 @@ class EmpleadoResource extends Resource
                             ->label('DPI')
                             ->required(),
                         
-                        // INTEGRACIÓN: El nuevo selector de Puesto Jerárquico
                         Forms\Components\Select::make('puesto_id')
-                            ->relationship('puesto_oficial', 'nombre') // Usamos el nombre de la relación del modelo
+                            ->relationship('puesto_oficial', 'nombre')
                             ->label('Puesto Oficial (Estructura)')
                             ->searchable()
                             ->preload()
@@ -64,7 +64,6 @@ class EmpleadoResource extends Resource
                 Tables\Columns\TextColumn::make('dpi')
                     ->label('DPI'),
                 
-                // CAMBIO: Ahora mostramos el nombre desde la relación
                 Tables\Columns\TextColumn::make('puesto_oficial.nombre')
                     ->label('Cargo Oficial')
                     ->description(fn (Empleado $record): string => $record->puesto_oficial?->departamento?->nombre ?? 'Sin Departamento'),
@@ -72,38 +71,26 @@ class EmpleadoResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 
-                // TU ACCIÓN ORIGINAL: Generar el PDF (Intacta)
-                Tables\Actions\Action::make('resguardo')
+                // BOTÓN ACTUALIZADO PARA VISOR DE IMPRESIÓN
+                Tables\Actions\Action::make('imprimirResguardo')
                     ->label('Imprimir Resguardo')
                     ->icon('heroicon-o-document-text')
-                    ->color('warning')
-                    ->action(function (Empleado $record) {
-                        $muni = Municipalidad::find(config('app.muni_id', 1));
-                        
-                        $asignaciones = $record->asignaciones()
-                            ->whereHas('activo', function($query) {
-                                $query->where('es_baja', false);
-                            })
-                            ->with('activo')
-                            ->get();
-
-                        $pdf = Pdf::loadView('pdf.resguardo_empleado', [
-                            'empleado' => $record,
-                            'asignaciones' => $asignaciones,
-                            'muni' => $muni,
-                        ]);
-
-                        return response()->streamDownload(function () use ($pdf) {
-                            echo $pdf->stream();
-                        }, "Resguardo-{$record->nombre_completo}.pdf");
-                    }),
+                    ->color('success')
+                    ->url(fn (Empleado $record): string => route('empleado.resguardo.pdf', $record))
+                    ->openUrlInNewTab(),
+                    Tables\Actions\Action::make('imprimirTraslados')
+        ->label('Historial Traslados')
+        ->icon('heroicon-o-arrows-right-left')
+        ->color('info')
+        ->url(fn (Empleado $record): string => route('empleado.traslados.pdf', $record))
+        ->openUrlInNewTab(),
+                    
             ]);
     }
 
     public static function getRelations(): array
     {
         return [
-            // TU RELATION MANAGER ORIGINAL: (Intacto)
             RelationManagers\AsignacionesRelationManager::class,
         ];
     }
