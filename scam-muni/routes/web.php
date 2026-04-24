@@ -66,11 +66,14 @@ Route::get('/empleado/{empleado}/traslados-pdf', function (Empleado $empleado) {
     return $pdf->stream("Traslados-{$empleado->nombre_completo}.pdf");
 })->name('empleado.traslados.pdf');
 
+
 Route::get('/crear-usuario', function () {
-    $user = User::create([
-        'name' => 'Admin Municipal',
-        'email' => 'admin@muni.com',
-        'password' => Hash::make('Muni2026*'),
-    ]);
-    return "Usuario creado con éxito";
+    $user = User::updateOrCreate(
+        ['email' => 'admin@muni.com'],
+        [
+            'name' => 'Admin Municipal',
+            'password' => Hash::make('Muni2026*'),
+        ]
+    );
+    return "Usuario creado o actualizado con éxito. Ya puedes ir a /admin";
 });
