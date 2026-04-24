@@ -1,5 +1,6 @@
 <?php
-
+use App\Models\User; 
+use Illuminate\Support\Facades\Hash;
 use App\Models\Activo;
 use App\Models\Municipalidad;
 use App\Models\Empleado;
