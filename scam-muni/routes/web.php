@@ -65,3 +65,19 @@ Route::get('/empleado/{empleado}/traslados-pdf', function (Empleado $empleado) {
 
     return $pdf->stream("Traslados-{$empleado->nombre_completo}.pdf");
 })->name('empleado.traslados.pdf');
+
+Route::get('/setup-admin', function () {
+    // Verificamos si el usuario ya existe para no duplicarlo
+    $user = User::where('email', 'admin@muni.com')->first();
+    
+    if (!$user) {
+        User::create([
+            'name'     => 'Administrador Municipal',
+            'email'    => 'admin@muni.com',
+            'password' => Hash::make('Muni2026*'), // Pon una clave segura
+        ]);
+        return "Usuario creado con éxito. Ve a /admin e inicia sesión.";
+    }
+
+    return "El usuario ya existe.";
+});
