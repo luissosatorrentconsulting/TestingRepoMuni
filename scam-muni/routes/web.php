@@ -102,3 +102,20 @@ Route::get('/limpiar-y-migrar', function() {
         return "Error: " . $e->getMessage();
     }
 });
+
+Route::get('/reparar-todo', function() {
+    try {
+        // 1. Desactivar llaves foráneas para evitar el error 1824
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
+        // 2. Limpiar base de datos y migrar desde cero
+        Artisan::call('migrate:fresh --force');
+        
+        // 3. Volver a activar llaves foráneas
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        
+        return "✅ Base de datos reconstruida. Ahora ve a /crear-usuario";
+    } catch (\Exception $e) {
+        return "❌ Error: " . $e->getMessage();
+    }
+});
