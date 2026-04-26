@@ -88,3 +88,17 @@ Route::get('/migrar-todo', function() {
         return "Error al migrar: " . $e->getMessage();
     }
 });
+
+Route::get('/limpiar-y-migrar', function() {
+    try {
+        // El comando 'migrate:fresh' borra todo lo que existe y lo crea desde cero correctamente
+        \Artisan::call('migrate:fresh --force');
+        
+        // Opcional: Si tienes seeders para que la municipalidad aparezca de una vez
+        // \Artisan::call('db:seed --force'); 
+        
+        return "Base de datos reconstruida con éxito. Por favor, vuelve a ejecutar la ruta /crear-usuario porque al borrar las tablas se borró el admin.";
+    } catch (\Exception $e) {
+        return "Error: " . $e->getMessage();
+    }
+});
