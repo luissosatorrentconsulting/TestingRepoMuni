@@ -78,3 +78,13 @@ Route::get('/crear-usuario', function () {
     );
     return "Usuario creado o actualizado con éxito. Ya puedes ir a /admin";
 });
+
+Route::get('/migrar-todo', function() {
+    try {
+        // Ejecuta las migraciones que faltan
+        \Artisan::call('migrate --force');
+        return "Tablas creadas con éxito: " . \Artisan::output();
+    } catch (\Exception $e) {
+        return "Error al migrar: " . $e->getMessage();
+    }
+});
