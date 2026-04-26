@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Filament\Models\Contracts\FilamentUser; 
 use Filament\Panel; 
 use Database\Factories\UserFactory;
@@ -10,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -49,8 +48,12 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Determina si el usuario puede acceder al panel de Filament.
+     */
     public function canAccessPanel(Panel $panel): bool
     {
+        // Al retornar true, cualquier usuario en tu tabla 'users' puede entrar.
         return true; 
     }
 }
