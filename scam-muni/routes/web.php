@@ -6,6 +6,7 @@ use App\Models\Municipalidad;
 use App\Models\Empleado;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
     return view('welcome');
