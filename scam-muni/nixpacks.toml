@@ -1,5 +1,8 @@
 [phases.setup]
-nixPkgs = ["php82", "php82Packages.intl", "php82Packages.gd", "php82Packages.zip", "nodejs_20"]
+nixPkgs = ["php82", "php82Packages.intl", "php82Packages.gd", "nodejs_20"]
 
 [phases.build]
-cmds = ["npm install && npm run build", "composer install --no-dev --optimize-autoloader"]
+cmds = ["npm install && npm run build", "composer install"]
+
+[phases.start]
+cmd = "php -d extension=intl -S 0.0.0.0:$PORT -t public"
