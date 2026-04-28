@@ -5,4 +5,5 @@ nixPkgs = ["php82", "php82Packages.intl", "php82Packages.gd", "icu", "nodejs_20"
 cmds = ["npm install && npm run build", "composer install --no-dev --optimize-autoloader"]
 
 [phases.start]
-cmd = "php -d extension=intl artisan serve --host 0.0.0.0 --port $PORT"
+# Forzamos la carga de la extensión intl directamente en el comando de inicio
+cmd = "php -d extension=intl.so artisan serve --host 0.0.0.0 --port $PORT"
