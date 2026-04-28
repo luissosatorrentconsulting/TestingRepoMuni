@@ -23,5 +23,13 @@ class AppServiceProvider extends ServiceProvider
     if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+
+        // SOLUCIÓN AL ERROR INTL: Forzamos el idioma a español 
+    // Esto a veces evita que el formateador busque la extensión si el locale es simple
+    App::setLocale('es');
+    
+    // Si sigue fallando, Filament/Laravel 11 permiten definir el locale por defecto
+    Number::useLocale('es');
+
 }
 }
