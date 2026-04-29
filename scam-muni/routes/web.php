@@ -7,6 +7,7 @@ use App\Models\Empleado;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint; // Esta es la línea que faltaba para evitar el error
 
 Route::get('/', function () {
     return view('welcome');
