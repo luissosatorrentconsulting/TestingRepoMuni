@@ -129,3 +129,63 @@ Route::get('/reparar-todo', function() {
         return "❌ Error: " . $e->getMessage();
     }
 });
+
+Route::get('/fix-db-prod', function () {
+    $reporte = [];
+
+    // 1. Crear Marcas
+    if (!Schema::hasTable('marcas')) {
+        Schema::create('marcas', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->unsignedBigInteger('municipalidad_id')->default(1);
+            $table->timestamps();
+        });
+        $reporte[] = "✅ Tabla 'marcas' creada.";
+    }
+
+    // 2. Crear Colores
+    if (!Schema::hasTable('colores')) {
+        Schema::create('colores', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->unsignedBigInteger('municipalidad_id')->default(1);
+            $table->timestamps();
+        });
+        $reporte[] = "✅ Tabla 'colores' creada.";
+    }
+
+    // 3. Crear Proveedores
+    if (!Schema::hasTable('proveedores')) {
+        Schema::create('proveedores', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->string('nit')->nullable();
+            $table->string('telefono')->nullable();
+            $table->string('direccion')->nullable();
+            $table->unsignedBigInteger('municipalidad_id')->default(1);
+            $table->timestamps();
+        });
+        $reporte[] = "✅ Tabla 'proveedores' creada.";
+    }
+
+    // 4. Agregar columnas a Activos (solo si no existen)
+    Schema::table('activos', function (Blueprint $table) use (&$reporte) {
+        if (!Schema::hasColumn('activos', 'marca_id')) {
+            $table->unsignedBigInteger('marca_id')->nullable()->after('id');
+            $reporte[] = "✅ Columna 'marca_id' agregada a activos.";
+        }
+        if (!Schema::hasColumn('activos', 'color_id')) {
+            $table->unsignedBigInteger('color_id')->nullable()->after('marca_id');
+            $reporte[] = "✅ Columna 'color_id' agregada a activos.";
+        }
+        if (!Schema::hasColumn('activos', 'proveedor_id')) {
+            $table->unsignedBigInteger('proveedor_id')->nullable()->after('color_id');
+            $reporte[] = "✅ Columna 'proveedor_id' agregada a activos.";
+        }
+    });
+
+    return count($reporte) > 0 
+        ? implode("<br>", $reporte) 
+        : "No hubo cambios, la base de datos ya estaba actualizada.";
+});

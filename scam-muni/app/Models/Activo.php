@@ -51,6 +51,21 @@ class Activo extends Model
         return $this->hasMany(Asignacion::class);
     }
 
+    public function marca()
+{
+    return $this->belongsTo(Marca::class);
+}
+
+public function color()
+{
+    return $this->belongsTo(Color::class);
+}
+
+public function proveedor()
+{
+    return $this->belongsTo(Proveedor::class);
+}
+
 
 public function historial()
 {

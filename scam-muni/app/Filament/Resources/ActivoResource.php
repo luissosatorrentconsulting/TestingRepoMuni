@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ActivoResource\Pages;
-// AGREGAMOS ESTA LÍNEA PARA QUE ENCUENTRE EL RELATION MANAGER
 use App\Filament\Resources\ActivoResource\RelationManagers; 
 use App\Models\Activo;
 use App\Models\Municipalidad;
@@ -51,37 +50,75 @@ class ActivoResource extends Resource
                             ->dehydrated(false), 
                     ])->columns(2),
 
-Forms\Components\Section::make('Detalles del Bien')
-    ->schema([
-        TextInput::make('descripcion')
-            ->label('Descripción Completa')
-            ->required()
-            ->columnSpanFull(),
+                Forms\Components\Section::make('Detalles del Bien')
+                    ->schema([
+                        TextInput::make('descripcion')
+                            ->label('Descripción Completa')
+                            ->required()
+                            ->columnSpanFull(),
 
-        TextInput::make('marca')->label('Marca'),
-        TextInput::make('modelo')->label('Modelo'),
-        TextInput::make('serie')->label('No. de Serie'),
+                        // CAMBIO: Select para Marca con botón de crear nuevo (+)
+                        Forms\Components\Select::make('marca_id')
+                            ->label('Marca')
+                            ->relationship('marca', 'nombre')
+                            ->searchable()
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('nombre')
+                                    ->label('Nombre de la Marca')
+                                    ->required(),
+                            ])
+                            ->required(),
 
-        // Agregados correctamente dentro de la sección
-        Forms\Components\Select::make('estado')
-            ->label('Estado Físico')
-            ->options([
-                'BUENO' => 'Bueno',
-                'REGULAR' => 'Regular',
-                'MALO' => 'Malo',
-            ])
-            ->default('BUENO'),
+                        TextInput::make('modelo')
+                            ->label('Modelo'),
 
-        TextInput::make('color')
-            ->label('Color'),
+                        TextInput::make('serie')
+                            ->label('No. de Serie'),
 
-        Forms\Components\Textarea::make('observaciones_activo')
-            ->label('Observaciones del Bien')
-            ->columnSpanFull(), // Para que use todo el ancho
-    ])->columns(3),
+                        // CAMBIO: Select para Color con botón de crear nuevo (+)
+                        Forms\Components\Select::make('color_id')
+                            ->label('Color')
+                            ->relationship('color', 'nombre')
+                            ->searchable()
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('nombre')
+                                    ->label('Nombre del Color')
+                                    ->required(),
+                            ])
+                            ->required(),
 
+                        Forms\Components\Select::make('estado')
+                            ->label('Estado Físico')
+                            ->options([
+                                'BUENO' => 'Bueno',
+                                'REGULAR' => 'Regular',
+                                'MALO' => 'Malo',
+                            ])
+                            ->default('BUENO'),
 
-                    
+                        // CAMBIO: Select para Proveedor con botón de crear nuevo (+)
+                        Forms\Components\Select::make('proveedor_id')
+                            ->label('Proveedor')
+                            ->relationship('proveedor', 'nombre')
+                            ->searchable()
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('nombre')
+                                    ->label('Razón Social / Nombre')
+                                    ->required(),
+                                Forms\Components\TextInput::make('nit')
+                                    ->label('NIT'),
+                                Forms\Components\TextInput::make('telefono')
+                                    ->label('Teléfono'),
+                            ])
+                            ->required(),
+
+                        Forms\Components\Textarea::make('observaciones_activo')
+                            ->label('Observaciones del Bien')
+                            ->columnSpanFull(), 
+                    ])->columns(3),
 
                 Forms\Components\Section::make('Información de Adquisición')
                     ->schema([
@@ -122,6 +159,9 @@ Forms\Components\Section::make('Detalles del Bien')
                     ->label('Categoría')
                     ->sortable(),
 
+                TextColumn::make('marca.nombre') // Agregado a la tabla para ver la marca
+                    ->label('Marca'),
+
                 TextColumn::make('costo_original')
                     ->label('Costo')
                     ->money('GTQ')
@@ -157,14 +197,12 @@ Forms\Components\Section::make('Detalles del Bien')
             ->actions([
                 Tables\Actions\EditAction::make(),
 
-               Tables\Actions\Action::make('historial')
-    ->label('Historial')
-    ->icon('heroicon-o-clock')
-    ->color('info')
-    // Esto genera el link dinámico a la ruta que acabas de crear
-    ->url(fn (Activo $record): string => route('activos.historial.pdf', $record))
-    // Esto obliga al navegador a abrirlo en una pestaña nueva
-    ->openUrlInNewTab(),
+                Tables\Actions\Action::make('historial')
+                    ->label('Historial')
+                    ->icon('heroicon-o-clock')
+                    ->color('info')
+                    ->url(fn (Activo $record): string => route('activos.historial.pdf', $record))
+                    ->openUrlInNewTab(),
                 
                 Tables\Actions\Action::make('baja')
                     ->label('Dar de Baja')
@@ -224,7 +262,6 @@ Forms\Components\Section::make('Detalles del Bien')
             ]);
     }
 
-    // SOLO UNA VEZ getRelations()
     public static function getRelations(): array
     {
         return [
@@ -240,5 +277,4 @@ Forms\Components\Section::make('Detalles del Bien')
             'edit' => Pages\EditActivo::route('/{record}/edit'),
         ];
     }
-    
 }
