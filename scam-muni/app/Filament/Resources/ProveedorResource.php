@@ -22,6 +22,7 @@ class ProveedorResource extends Resource
     protected static ?string $modelLabel = 'Proveedor';
 protected static ?string $pluralModelLabel = 'Proveedores';
 protected static ?string $navigationLabel = 'Proveedores';
+protected static ?string $navigationGroup = 'Inventario';
 
     public static function form(Form $form): Form
     {

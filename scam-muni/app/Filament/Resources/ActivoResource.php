@@ -24,7 +24,7 @@ class ActivoResource extends Resource
     protected static ?string $model = Activo::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
-    
+    protected static ?string $navigationGroup = 'Inventario';
     protected static ?string $modelLabel = 'Activo';
     protected static ?string $pluralModelLabel = 'Inventario de Activos';
     protected static ?string $navigationLabel = 'Inventario de Activos';

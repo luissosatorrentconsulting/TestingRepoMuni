@@ -18,6 +18,7 @@ class MunicipalidadResource extends Resource
  
     protected static ?string $model = Municipalidad::class;
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
+    protected static ?string $navigationGroup = 'Configuración';
     protected static ?string $modelLabel = 'Municipalidad';
     protected static ?string $pluralModelLabel = 'Municipalidades';
 
@@ -66,4 +67,10 @@ FileUpload::make('logo')
             'edit' => Pages\EditMunicipalidad::route('/{record}/edit'),
         ];
     }
+
+    public static function canViewAny(): bool
+{
+    // Solo el administrador tiene permiso para ver este recurso
+    return auth()->user()?->rol === 'admin';
+}
 }

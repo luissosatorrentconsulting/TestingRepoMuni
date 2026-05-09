@@ -18,6 +18,7 @@ class EmpleadoResource extends Resource
 {
     protected static ?string $model = Empleado::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static ?string $navigationGroup = 'Recursos Humanos';
     protected static ?string $modelLabel = 'Empleado';
     protected static ?string $pluralModelLabel = 'Empleados';
 

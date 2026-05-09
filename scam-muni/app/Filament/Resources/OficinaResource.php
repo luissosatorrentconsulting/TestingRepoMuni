@@ -18,6 +18,7 @@ class OficinaResource extends Resource
     protected static ?string $model = Oficina::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Recursos Humanos';
 
    public static function form(Form $form): Form
 {

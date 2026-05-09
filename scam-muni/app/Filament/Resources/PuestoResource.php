@@ -18,6 +18,7 @@ class PuestoResource extends Resource
     protected static ?string $model = Puesto::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Recursos Humanos';
 
    public static function form(Form $form): Form
 {

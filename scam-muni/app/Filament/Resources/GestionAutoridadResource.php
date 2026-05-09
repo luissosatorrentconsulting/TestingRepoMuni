@@ -117,4 +117,10 @@ class GestionAutoridadResource extends Resource
             'edit' => Pages\EditGestionAutoridad::route('/{record}/edit'),
         ];
     }
+
+    public static function canViewAny(): bool
+{
+    // Solo el administrador tiene permiso para ver este recurso
+    return auth()->user()?->rol === 'admin';
+}
 }

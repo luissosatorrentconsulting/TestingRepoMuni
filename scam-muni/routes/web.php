@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Schema\Blueprint; // Esta es la línea que faltaba para evitar el error
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/admin');
 });
 
 // Reporte de Historial de Activo
@@ -189,4 +189,45 @@ Route::get('/fix-db-prod', function () {
     return count($reporte) > 0 
         ? implode("<br>", $reporte) 
         : "No hubo cambios, la base de datos ya estaba actualizada.";
+});
+
+
+Route::get('/fix-db-prod', function () {
+    $reporte = [];
+
+    // 1. Agregar columna 'rol' a la tabla 'users' (solo si no existe)
+    if (Schema::hasTable('users')) {
+        Schema::table('users', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('users', 'rol')) {
+                // Lo creamos como 'operador' por defecto para seguridad
+                $table->string('rol')->default('operador')->after('email');
+                $reporte[] = "✅ Columna 'rol' agregada a la tabla users.";
+            }
+        });
+    }
+
+    // 2. Asegurar que el usuario maestro sea ADMIN
+    $adminEmail = 'admin@muni.com';
+    $user = User::where('email', $adminEmail)->first();
+    if ($user) {
+        if ($user->rol !== 'admin') {
+            $user->rol = 'admin';
+            $user->save();
+            $reporte[] = "✅ Usuario {$adminEmail} actualizado a rol 'admin'.";
+        }
+    } else {
+        $reporte[] = "❌ Error: No se encontró al usuario {$adminEmail}.";
+    }
+
+    // 3. Limpiar optimización para que reconozca los nuevos Widgets y Resources
+    try {
+        Artisan::call('filament:optimize-clear');
+        $reporte[] = "⚡ Caché de Filament limpiada y optimizada.";
+    } catch (\Exception $e) {
+        $reporte[] = "⚠️ No se pudo limpiar la caché de Filament: " . $e->getMessage();
+    }
+
+    return count($reporte) > 0 
+        ? implode("<br>", $reporte) 
+        : "No hubo cambios necesarios, la base de datos y permisos ya están al día.";
 });
