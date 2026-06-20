@@ -317,47 +317,33 @@ Route::get('/limpiar-permisos', function () {
     return "⚡ Permisos reiniciados en caliente.";
 });
 
+// --- RUTA DE EMERGENCIA: REMOCIÓN FORZADA DE OFICINA_ID ---
 Route::get('/limpieza-profunda-jerarquia', function () {
-    $reporte = [];
-
     try {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // 1. Apagamos las llaves foráneas en la sesión de la bdd
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        // 1. Crear la tabla ubicaciones limpia (plana, sin la columna oficina_id)
-        if (!Schema::hasTable('ubicaciones')) {
-            Schema::create('ubicaciones', function (Blueprint $table) {
-                $table->id();
-                $table->string('codigo')->unique();
-                $table->string('nombre');
-                $table->text('observacion')->nullable();
-                $table->timestamps();
-            });
-            $reporte[] = "✅ Tabla 'ubicaciones' creada de forma lineal en producción.";
+        // 2. Revisamos con Laravel si la columna necia existe antes de tirarla
+        if (Schema::hasColumn('ubicaciones', 'oficina_id')) {
+            DB::statement('ALTER TABLE ubicaciones DROP COLUMN oficina_id;');
+            $mensaje = "💥 ¡Columna 'oficina_id' eliminada exitosamente a la fuerza!";
         } else {
-            $reporte[] = "ℹ️ La tabla 'ubicaciones' ya existía en producción.";
+            $mensaje = "ℹ️ La columna 'oficina_id' ya no existía en la tabla.";
         }
 
-        // 2. Insertar la columna ubicacion_id en oficinas (si no existe)
-        if (!Schema::hasColumn('oficinas', 'ubicacion_id')) {
-            DB::statement("ALTER TABLE oficinas ADD COLUMN ubicacion_id BIGINT UNSIGNED NULL AFTER departamento_id;");
-            $reporte[] = "➕ Columna 'ubicacion_id' inyectada con éxito en la tabla 'oficinas'.";
-        } else {
-            $reporte[] = "ℹ️ La columna 'ubicacion_id' ya existía en 'oficinas'.";
-        }
-
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // 3. Volvemos a encender las llaves foráneas
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
         return response()->json([
             'status' => 'success',
-            'message' => '🚀 CONTROL DE UBICACIONES SINCRONIZADO EN PRODUCCIÓN',
-            'steps' => $reporte
+            'message' => $mensaje
         ], 200);
 
     } catch (\Exception $e) {
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
         return response()->json([
             'status' => 'error',
-            'message' => '❌ Falló la sincronización del cambio.',
+            'message' => '❌ No se pudo borrar la columna de forma directa.',
             'error_details' => $e->getMessage()
         ], 500);
     }
