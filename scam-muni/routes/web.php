@@ -317,118 +317,39 @@ Route::get('/limpiar-permisos', function () {
     return "⚡ Permisos reiniciados en caliente.";
 });
 
-// --- RUTA INTEGRAL ACTUALIZADA: PARCHADO Y EXPANSIÓN EN PRODUCCIÓN (RAILWAY) ---
 Route::get('/limpieza-profunda-jerarquia', function () {
     $reporte = [];
 
     try {
-        // Desactivamos restricciones temporales para trabajar libremente
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        // FASE 1: Alteraciones sobre tablas existentes (Sin borrar sus datos)
-        
-        // 1. Inyectar columna 'ubicacion_id' a la tabla 'oficinas' (Si no existe)
-        if (!Schema::hasColumn('oficinas', 'ubicacion_id')) {
-            DB::statement("ALTER TABLE oficinas ADD COLUMN ubicacion_id BIGINT UNSIGNED NULL AFTER departamento_id;");
-            $reporte[] = "➕ Campo 'ubicacion_id' añadido con éxito a la tabla 'oficinas'.";
-        } else {
-            $reporte[] = "ℹ️ El campo 'ubicacion_id' ya existía en 'oficinas'.";
-        }
-
-        // 2. Inyectar campos de Factura e Inventariado a la tabla 'activos'
-        if (!Schema::hasColumn('activos', 'numero_factura')) {
-            DB::statement("ALTER TABLE activos ADD COLUMN numero_factura VARCHAR(255) NULL AFTER costo_original;");
-            $reporte[] = "➕ Campo 'numero_factura' añadido con éxito a la tabla 'activos'.";
-        }
-        if (!Schema::hasColumn('activos', 'numero_inventario')) {
-            DB::statement("ALTER TABLE activos ADD COLUMN numero_inventario VARCHAR(255) NULL AFTER numero_factura;");
-            $reporte[] = "➕ Campo 'numero_inventario' añadido con éxito a la tabla 'activos'.";
-        }
-
-        // 3. Modificar el largo del nombre de categorías a 100 caracteres
-        DB::statement("ALTER TABLE categorias MODIFY COLUMN nombre VARCHAR(100) NOT NULL;");
-        $reporte[] = "🏷️ Longitud de caracteres en tabla 'categorias' ampliada a 100 exitosamente.";
-
-
-        // FASE 2: Creación Controlada de las Nuevas Tablas de Expansión
-        
-        // 1. Nueva Tabla: Ubicaciones
+        // 1. Crear la tabla ubicaciones limpia (plana, sin la columna oficina_id)
         if (!Schema::hasTable('ubicaciones')) {
             Schema::create('ubicaciones', function (Blueprint $table) {
                 $table->id();
                 $table->string('codigo')->unique();
                 $table->string('nombre');
                 $table->text('observacion')->nullable();
-                $table->foreignId('oficina_id')->constrained('oficinas')->onDelete('cascade');
                 $table->timestamps();
             });
-            $reporte[] = "✅ Nueva tabla 'ubicaciones' creada correctamente.";
+            $reporte[] = "✅ Tabla 'ubicaciones' creada de forma lineal en producción.";
+        } else {
+            $reporte[] = "ℹ️ La tabla 'ubicaciones' ya existía en producción.";
         }
 
-        // 2. Nueva Tabla: Bienes Varios (Ligado a Oficina, NO a Empleados)
-        if (!Schema::hasTable('bienes_varios')) {
-            Schema::create('bienes_varios', function (Blueprint $table) {
-                $table->id();
-                $table->string('codigo_qr')->nullable();
-                $table->string('descripcion');
-                $table->string('marca')->nullable();
-                $table->decimal('costo', 10, 2)->default(0.00);
-                $table->date('fecha_compra')->nullable();
-                $table->string('numero_factura')->nullable();
-                $table->string('numero_inventario')->nullable();
-                $table->string('estado')->default('Excelente');
-                $table->date('fecha_baja')->nullable();
-                
-                $table->foreignId('categoria_id')->constrained('categorias')->onDelete('cascade');
-                $table->foreignId('proveedor_id')->nullable()->constrained('proveedores')->onDelete('set null');
-                $table->foreignId('oficina_id')->constrained('oficinas')->onDelete('cascade');
-                $table->timestamps();
-            });
-            $reporte[] = "✅ Nueva tabla 'bienes_varios' creada correctamente.";
+        // 2. Insertar la columna ubicacion_id en oficinas (si no existe)
+        if (!Schema::hasColumn('oficinas', 'ubicacion_id')) {
+            DB::statement("ALTER TABLE oficinas ADD COLUMN ubicacion_id BIGINT UNSIGNED NULL AFTER departamento_id;");
+            $reporte[] = "➕ Columna 'ubicacion_id' inyectada con éxito en la tabla 'oficinas'.";
+        } else {
+            $reporte[] = "ℹ️ La columna 'ubicacion_id' ya existía en 'oficinas'.";
         }
 
-        // 3. Nueva Tabla: Control de Obras (Ligado directo a la Municipalidad)
-        if (!Schema::hasTable('control_obras')) {
-            Schema::create('control_obras', function (Blueprint $table) {
-                $table->id();
-                $table->string('snip')->unique();
-                $table->string('nombre_proyecto');
-                $table->string('numero_contrato')->nullable();
-                $table->decimal('monto', 12, 2)->default(0.00);
-                $table->date('fecha')->nullable();
-                $table->foreignId('municipalidad_id')->constrained('municipalidades')->onDelete('cascade');
-                $table->timestamps();
-            });
-            $reporte[] = "✅ Nueva tabla 'control_obras' creada correctamente.";
-        }
-
-        // FASE 3: Sincronización de Seguridad y Estado Inicial de Cuentas
-        $muniId = env('MUNICIPALIDAD_DEFAULT_ID', 1);
-        Municipalidad::updateOrCreate(
-            ['id' => $muniId],
-            [
-                'nombre' => 'Municipalidad Sincronizada',
-                'codigo_muni' => '910',
-                'departamento' => 'Guatemala',
-            ]
-        );
-
-        User::updateOrCreate(
-            ['email' => 'admin@muni.com'],
-            [
-                'name' => 'Admin Municipal',
-                'password' => Hash::make('Muni2026*'),
-                'rol' => 'admin',
-            ]
-        );
-        $reporte[] = "👑 FASE 3: Credenciales del Administrador Maestro validadas y aseguradas.";
-
-        // Volvemos a activar las restricciones de llaves foráneas
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         return response()->json([
             'status' => 'success',
-            'message' => '🚀 ¡BASE DE DATOS EN PRODUCCIÓN EXPANDIDA Y PARCHADA CON ÉXITO SIN PÉRDIDA DE DATOS!',
+            'message' => '🚀 CONTROL DE UBICACIONES SINCRONIZADO EN PRODUCCIÓN',
             'steps' => $reporte
         ], 200);
 
@@ -436,7 +357,7 @@ Route::get('/limpieza-profunda-jerarquia', function () {
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         return response()->json([
             'status' => 'error',
-            'message' => '❌ Falló la inyección automatizada de la fase 2 en producción.',
+            'message' => '❌ Falló la sincronización del cambio.',
             'error_details' => $e->getMessage()
         ], 500);
     }

@@ -28,12 +28,6 @@ class UbicacionResource extends Resource
                 Forms\Components\TextInput::make('nombre')
                     ->label('Nombre de la Ubicación')
                     ->required(),
-                Forms\Components\Select::make('oficina_id')
-                    ->relationship('oficina', 'nombre')
-                    ->label('Oficina a la que pertenece')
-                    ->required()
-                    ->searchable()
-                    ->preload(),
                 Forms\Components\Textarea::make('observacion')
                     ->label('Observaciones')
                     ->columnSpanFull(),
@@ -45,8 +39,7 @@ class UbicacionResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('codigo')->label('Código')->searchable(),
-                Tables\Columns\TextColumn::make('nombre')->label('Ubicación')->searchable(),
-                Tables\Columns\TextColumn::make('oficina.nombre')->label('Oficina Relacionada'),
+                Tables\Columns\TextColumn::make('nombre')->label('Ubicación Física')->searchable(),
             ])
             ->filters([])
             ->actions([Tables\Actions\EditAction::make()])
