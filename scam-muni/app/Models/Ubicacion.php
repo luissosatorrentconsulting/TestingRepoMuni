@@ -7,5 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 class Ubicacion extends Model
 {
     protected $table = 'ubicaciones';
-    protected $fillable = ['codigo', 'nombre', 'observacion'];
+    protected $fillable = ['nombre', 'observacion']; // <-- Código eliminado
 }

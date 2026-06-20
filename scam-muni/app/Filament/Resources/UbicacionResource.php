@@ -17,34 +17,27 @@ class UbicacionResource extends Resource
     protected static ?string $navigationGroup = 'Recursos Humanos';
     protected static ?string $pluralModelLabel = 'Ubicaciones';
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('codigo')
-                    ->label('Código de Ubicación')
-                    ->required()
-                    ->unique(ignoreRecord: true),
-                Forms\Components\TextInput::make('nombre')
-                    ->label('Nombre de la Ubicación')
-                    ->required(),
-                Forms\Components\Textarea::make('observacion')
-                    ->label('Observaciones')
-                    ->columnSpanFull(),
-            ]);
-    }
+ public static function form(Form $form): Form
+{
+    return $form
+        ->schema([
+            Forms\Components\TextInput::make('nombre')
+                ->label('Nombre de la Ubicación')
+                ->required(),
+            Forms\Components\Textarea::make('observacion')
+                ->label('Observaciones')
+                ->columnSpanFull(),
+        ]);
+}
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('codigo')->label('Código')->searchable(),
-                Tables\Columns\TextColumn::make('nombre')->label('Ubicación Física')->searchable(),
-            ])
-            ->filters([])
-            ->actions([Tables\Actions\EditAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
-    }
+public static function table(Table $table): Table
+{
+    return $table
+        ->columns([
+            Tables\Columns\TextColumn::make('id')->label('ID')->sortable(),
+            Tables\Columns\TextColumn::make('nombre')->label('Ubicación Física')->searchable(),
+        ]);
+}
 
     public static function getPages(): array
     {

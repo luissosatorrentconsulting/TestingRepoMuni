@@ -266,16 +266,17 @@ Route::get('/limpiar-permisos', function () {
     return "⚡ Permisos reiniciados en caliente.";
 });
 
-// --- RUTA RESOLUTIVA DEFINITIVA: RESET LINEAL DE UBICACIONES EN PRODUCCIÓN ---
+// --- RUTA RESOLUTIVA DEFINITIVA: RESET LINEAL Y SIN CÓDIGO EN PRODUCCIÓN ---
 Route::get('/limpieza-profunda-jerarquia', function () {
     try {
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        // 1. Reconstrucción segura de la tabla de ubicaciones vacía
+        // 1. Borramos la tabla vieja por completo
         Schema::dropIfExists('ubicaciones');
+        
+        // 2. La recreamos limpia: SIN oficina_id y SIN codigo
         Schema::create('ubicaciones', function (Blueprint $table) {
-            $table->id();
-            $table->string('codigo')->unique();
+            $table->id(); // Su propio ID único autoincremental
             $table->string('nombre');
             $table->text('observacion')->nullable();
             $table->timestamps();
@@ -285,7 +286,7 @@ Route::get('/limpieza-profunda-jerarquia', function () {
 
         return response()->json([
             'status' => 'success',
-            'message' => '💥 ¡Tabla vieja destruida y recreada de forma lineal con éxito! Tu base de datos de producción está limpia.'
+            'message' => '💥 ¡Tabla ubicaciones recreada con éxito! Campo código eliminado y estructura 100% limpia.'
         ], 200);
 
     } catch (\Exception $e) {
