@@ -4,42 +4,26 @@ namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser; 
 use Filament\Panel; 
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    // Agregamos 'rol' para que Filament y la vista puedan guardarlo sin errores de MassAssignment
     protected $fillable = [
         'name',
         'email',
         'password',
+        'rol', 
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -48,12 +32,9 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    /**
-     * Determina si el usuario puede acceder al panel de Filament.
-     */
     public function canAccessPanel(Panel $panel): bool
     {
-        // Al retornar true, cualquier usuario en tu tabla 'users' puede entrar.
-        return true; 
+        // Controlamos el acceso real según el rol que tengan guardado
+        return $this->rol === 'admin' || $this->rol === 'operador'; 
     }
 }

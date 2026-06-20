@@ -7,28 +7,26 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Departamento extends Model
 {
-    protected $fillable = ['nombre', 'oficina_id', 'responsable_id'];
+    // Cambiado: Ahora guarda municipalidad_id de forma directa
+    protected $fillable = ['nombre', 'municipalidad_id', 'responsable_id'];
 
-    // Relación con Oficina
-    public function oficina()
+    // Un departamento pertenece directamente a la Municipalidad
+    public function municipalidad()
     {
-        return $this->belongsTo(Oficina::class);
+        return $this->belongsTo(Municipalidad::class);
     }
 
-    // Relación con Puestos
-    public function puestos()
+    // Un departamento ahora tiene muchas Oficinas (No puestos)
+    public function oficinas()
     {
-        return $this->hasMany(Puesto::class);
+        return $this->hasMany(Oficina::class);
     }
 
-    // ESTO ES CLAVE: Filtro automático para que solo salgan departamentos 
-    // que pertenezcan a oficinas de la municipalidad actual.
+    // Mantenemos tu Global Scope pero simplificado: directo a la Municipalidad
     protected static function booted()
     {
         static::addGlobalScope('municipalidad', function (Builder $builder) {
-            $builder->whereHas('oficina', function ($query) {
-                $query->where('municipalidad_id', config('app.muni_id', 1));
-            });
+            $builder->where('municipalidad_id', config('app.muni_id', 1));
         });
     }
 }

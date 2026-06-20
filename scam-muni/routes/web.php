@@ -316,3 +316,104 @@ Route::get('/limpiar-permisos', function () {
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     return "⚡ Permisos reiniciados en caliente.";
 });
+
+Route::get('/limpieza-profunda-jerarquia', function () {
+    $reporte = [];
+
+    try {
+        // FASE 1: Limpieza absoluta nativa y ejecución inicial del ecosistema
+        // Esto crea las tablas periféricas (sessions, cache, activos, etc.) sin interferencia
+        Artisan::call('migrate:fresh --force');
+        $reporte[] = "🗑️ FASE 1: Base de datos reseteada por completo con migrate:fresh.";
+
+        // FASE 2: Demolición controlada de la jerarquía antigua (Evitamos conflictos de llaves)
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::dropIfExists('puestos');
+        Schema::dropIfExists('oficinas');
+        Schema::dropIfExists('departamentos');
+        Schema::dropIfExists('municipalidades');
+        $reporte[] = "🔨 FASE 2: Tablas organizacionales obsoletas demolidas para reestructuración.";
+
+        // FASE 3: Reconstrucción quirúrgica bajo el nuevo plano (Muni -> Depto -> Oficina -> Puesto)
+        
+        // 1. Tabla Municipalidades
+        Schema::create('municipalidades', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->string('codigo_muni', 50)->nullable(); // Campo personalizado inyectado
+            $table->string('departamento')->nullable();
+            $table->string('logo')->nullable();
+            $table->timestamps();
+        });
+        $reporte[] = "🏢 Estructura: Tabla 'municipalidades' reconstruida.";
+
+        // 2. Tabla Departamentos (Padre: Municipalidad)
+        Schema::create('departamentos', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->foreignId('municipalidad_id')->constrained('municipalidades')->onDelete('cascade');
+            $table->unsignedBigInteger('responsable_id')->nullable();
+            $table->timestamps();
+        });
+        $reporte[] = "📂 Estructura: Tabla 'departamentos' vinculada a Municipalidad.";
+
+        // 3. Tabla Oficinas (Padre: Departamento)
+        Schema::create('oficinas', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->foreignId('departamento_id')->constrained('departamentos')->onDelete('cascade');
+            $table->timestamps();
+        });
+        $reporte[] = "🏢 Estructura: Tabla 'oficinas' vinculada a Departamento.";
+
+        // 4. Tabla Puestos (Padre: Oficina)
+        Schema::create('puestos', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->foreignId('oficina_id')->constrained('oficinas')->onDelete('cascade');
+            $table->unsignedBigInteger('empleado_jefe_id')->nullable();
+            $table->timestamps();
+        });
+        $reporte[] = "💼 Estructura: Tabla 'puestos' vinculada a Oficina.";
+
+        // FASE 4: Inyección de datos raíz (Multi-Muni)
+        $muniId = env('MUNICIPALIDAD_DEFAULT_ID', 1);
+        Municipalidad::updateOrCreate(
+            ['id' => $muniId],
+            [
+                'nombre' => 'Municipalidad Sincronizada',
+                'codigo_muni' => '910',
+                'departamento' => 'Guatemala',
+            ]
+        );
+        $reporte[] = "📝 FASE 4: Fila maestra cargada en 'municipalidades' (ID: {$muniId} | Código: 910).";
+
+        // FASE 5: Sincronización del Superusuario Administrador con Rol Forzado
+        User::updateOrCreate(
+            ['email' => 'admin@muni.com'],
+            [
+                'name' => 'Admin Municipal',
+                'password' => Hash::make('Muni2026*'),
+                'rol' => 'admin', // Forzamos el rol guardado en la base de datos
+            ]
+        );
+        $reporte[] = "👑 FASE 5: Superusuario 'admin@muni.com' inyectado con rol 'admin'.";
+
+        // Reactivamos el motor de restricciones relacionales
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => '🚀 ¡DEPLOY DE NUEVA JERARQUÍA COMPLETADO EN EL SERVIDOR CON ÉXITO!',
+            'steps' => $reporte
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        return response()->json([
+            'status' => 'error',
+            'message' => '❌ Ocurrió un error fatal en la reconstrucción del servidor.',
+            'error_details' => $e->getMessage()
+        ], 500);
+    }
+});
