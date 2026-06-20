@@ -311,3 +311,8 @@ Route::get('/limpieza-profunda-prod', function () {
         ], 500);
     }
 });
+Route::get('/limpiar-permisos', function () {
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    return "⚡ Permisos reiniciados en caliente.";
+});
