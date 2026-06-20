@@ -231,3 +231,83 @@ Route::get('/fix-db-prod', function () {
         ? implode("<br>", $reporte) 
         : "No hubo cambios necesarios, la base de datos y permisos ya están al día.";
 });
+
+Route::get('/limpieza-profunda-prod', function () {
+    $reporte = [];
+
+    try {
+        // FASE 1: Apagar llaves y borrar absolutamente todas las tablas existentes
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
+        $tables = DB::select('SHOW TABLES');
+        $dbName = env('DB_DATABASE', 'railway');
+        $colName = "Tables_in_{$dbName}";
+
+        foreach ($tables as $table) {
+            Schema::dropIfExists($table->$colName);
+        }
+        $reporte[] = "🗑️ FASE 1: Base de datos borrada por completo (0 tablas residuales).";
+
+        // FASE 2: Volver a ejecutar todas las migraciones limpias desde cero
+        Artisan::call('migrate --force');
+        $reporte[] = "⚙️ FASE 2: Migraciones ejecutadas con éxito en el orden correcto.";
+
+        // FASE 3: Reparar e inyectar la columna 'codigo_muni' que agregamos manualmente
+        if (Schema::hasTable('municipalidades')) {
+            Schema::table('municipalidades', function (Blueprint $table) use (&$reporte) {
+                if (!Schema::hasColumn('municipalidades', 'codigo_muni')) {
+                    // La añadimos como VARCHAR para dar la máxima flexibilidad de códigos
+                    $table->string('codigo_muni', 50)->nullable()->after('id');
+                    $reporte[] = "📝 FASE 3: Columna 'codigo_muni' inyectada exitosamente en la tabla municipalidades.";
+                }
+            });
+        }
+
+        // FASE 4: Crear la primera fila base de la Municipalidad para que no falle el sistema
+        $muniIdPredeterminado = env('MUNICIPALIDAD_DEFAULT_ID', 1);
+        Municipalidad::updateOrCreate(
+            ['id' => $muniIdPredeterminado],
+            [
+                'nombre' => 'Municipalidad Destino Real',
+                'codigo_muni' => '910', // El código que estabas probando
+                'departamento' => 'Principal',
+            ]
+        );
+        $reporte[] = "🏢 FASE 4: Registro inicial insertado en 'municipalidades' (ID: {$muniIdPredeterminado}).";
+
+        // FASE 5: Crear el superusuario administrador con su rol 'admin'
+        User::updateOrCreate(
+            ['email' => 'admin@muni.com'],
+            [
+                'name' => 'Admin Municipal',
+                'password' => Hash::make('Muni2026*'), // Puedes cambiar la clave aquí
+                'rol' => 'admin',
+            ]
+        );
+        $reporte[] = "👑 FASE 5: Usuario 'admin@muni.com' configurado con rol 'admin' con éxito.";
+
+        // FASE 6: Limpieza profunda de la caché interna de Filament
+        Artisan::call('filament:optimize-clear');
+        $reporte[] = "⚡ FASE 6: Caché de Filament purgada (listo para cargar recursos nuevos).";
+
+        // Volvemos a activar las restricciones de llaves foráneas
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // Retornamos todo el éxito detallado en una lista limpia en pantalla
+        return response()->json([
+            'status' => 'success',
+            'message' => '🚀 ¡DEPLOY DE BASE DE DATOS COMPLETADO CON ÉXITO!',
+            'steps' => $reporte
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Si algo falla, forzamos el encendido de llaves para no romper la base de datos y vemos el error
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => '❌ Ocurrió un error en el despliegue automático.',
+            'error_details' => $e->getMessage()
+        ], 500);
+    }
+});

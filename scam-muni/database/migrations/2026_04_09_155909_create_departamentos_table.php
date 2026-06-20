@@ -9,14 +9,12 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
- public function up(): void
+public function up(): void
 {
     Schema::create('departamentos', function (Blueprint $table) {
         $table->id();
         $table->string('nombre');
-        $table->foreignId('oficina_id')->constrained()->cascadeOnDelete();
-        // Relación con el empleado responsable
-        $table->unsignedBigInteger('responsable_id')->nullable(); 
+        $table->foreignId('oficina_id')->constrained('oficinas')->onDelete('cascade'); // <--- El padre
         $table->timestamps();
     });
 }

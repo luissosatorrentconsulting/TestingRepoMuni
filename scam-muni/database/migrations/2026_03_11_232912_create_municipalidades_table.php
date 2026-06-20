@@ -35,10 +35,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
-    {
-        // Lo dejamos vacío para que no intente crear la tabla que ya existe
-    }
+public function up(): void
+{
+    Schema::create('municipalidades', function (Blueprint $table) {
+        $table->id(); // <--- Clave primaria indispensable
+        $table->string('nombre');
+        $table->timestamps();
+    });
+}
 
     public function down(): void
     {

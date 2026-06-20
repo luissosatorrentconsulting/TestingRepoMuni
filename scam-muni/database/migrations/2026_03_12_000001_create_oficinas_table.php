@@ -14,7 +14,7 @@ public function up(): void
     Schema::create('oficinas', function (Blueprint $table) {
         $table->id();
         $table->string('nombre');
-        $table->foreignId('municipalidad_id')->constrained('municipalidades')->cascadeOnDelete();
+        $table->unsignedBigInteger('municipalidad_id');
         $table->timestamps();
     });
 }

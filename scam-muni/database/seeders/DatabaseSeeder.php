@@ -13,13 +13,20 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database.
      */
-    public function run(): void
-    {
-        // User::factory(10)->create();
+   public function run(): void
+{
+    // Creamos la municipalidad por defecto primero (ya que los usuarios/oficinas dependen de ella)
+    $muni = \App\Models\Municipalidad::create([
+        'id' => 1,
+        'nombre' => 'Municipalidad de Prueba Local',
+    ]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-    }
+    // Creamos tu usuario Administrador Maestro
+    \App\Models\User::create([
+        'name' => 'Administrador',
+        'email' => 'admin@muni.com',
+        'password' => bcrypt('12345'), // Cambia esto por tu clave
+        'rol' => 'admin',
+    ]);
+}
 }
