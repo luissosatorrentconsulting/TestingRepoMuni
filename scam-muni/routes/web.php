@@ -317,33 +317,40 @@ Route::get('/limpiar-permisos', function () {
     return "⚡ Permisos reiniciados en caliente.";
 });
 
-// --- RUTA DE EMERGENCIA: REMOCIÓN FORZADA DE OFICINA_ID ---
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+// --- RUTA RESOLUTIVA: RESET COMPLETO DE UBICACIONES EN PRODUCCIÓN ---
 Route::get('/limpieza-profunda-jerarquia', function () {
     try {
-        // 1. Apagamos las llaves foráneas en la sesión de la bdd
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        // 2. Revisamos con Laravel si la columna necia existe antes de tirarla
-        if (Schema::hasColumn('ubicaciones', 'oficina_id')) {
-            DB::statement('ALTER TABLE ubicaciones DROP COLUMN oficina_id;');
-            $mensaje = "💥 ¡Columna 'oficina_id' eliminada exitosamente a la fuerza!";
-        } else {
-            $mensaje = "ℹ️ La columna 'oficina_id' ya no existía en la tabla.";
-        }
+        // 1. Borramos la tabla rebelde por completo con todo y candados
+        Schema::dropIfExists('ubicaciones');
 
-        // 3. Volvemos a encender las llaves foráneas
+        // 2. La volvemos a crear limpia, idéntica a tu local y sin el campo oficina_id
+        Schema::create('ubicaciones', function (Blueprint $table) {
+            $table->id();
+            $table->string('codigo')->unique();
+            $table->string('nombre');
+            $table->text('observacion')->nullable();
+            $table->timestamps();
+        });
+
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
         return response()->json([
             'status' => 'success',
-            'message' => $mensaje
+            'message' => '💥 ¡Tabla vieja destruida y recreada de forma lineal con éxito! Tu base de datos de producción está limpia.'
         ], 200);
 
     } catch (\Exception $e) {
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
         return response()->json([
             'status' => 'error',
-            'message' => '❌ No se pudo borrar la columna de forma directa.',
+            'message' => '❌ No se pudo aplicar el plan de emergencia.',
             'error_details' => $e->getMessage()
         ], 500);
     }
