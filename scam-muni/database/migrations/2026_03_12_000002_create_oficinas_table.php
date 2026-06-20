@@ -17,6 +17,7 @@ return new class extends Migration
             
             // Relación directa con Departamentos (Padre)
             $table->foreignId('departamento_id')->constrained('departamentos')->onDelete('cascade');
+            $table->unsignedBigInteger('ubicacion_id')->nullable();
             
             $table->timestamps();
         });

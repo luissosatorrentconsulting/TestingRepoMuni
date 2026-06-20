@@ -317,66 +317,92 @@ Route::get('/limpiar-permisos', function () {
     return "⚡ Permisos reiniciados en caliente.";
 });
 
+// --- RUTA INTEGRAL ACTUALIZADA: PARCHADO Y EXPANSIÓN EN PRODUCCIÓN (RAILWAY) ---
 Route::get('/limpieza-profunda-jerarquia', function () {
     $reporte = [];
 
     try {
-        // FASE 1: Limpieza absoluta nativa y ejecución inicial del ecosistema
-        // Esto crea las tablas periféricas (sessions, cache, activos, etc.) sin interferencia
-        Artisan::call('migrate:fresh --force');
-        $reporte[] = "🗑️ FASE 1: Base de datos reseteada por completo con migrate:fresh.";
-
-        // FASE 2: Demolición controlada de la jerarquía antigua (Evitamos conflictos de llaves)
+        // Desactivamos restricciones temporales para trabajar libremente
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Schema::dropIfExists('puestos');
-        Schema::dropIfExists('oficinas');
-        Schema::dropIfExists('departamentos');
-        Schema::dropIfExists('municipalidades');
-        $reporte[] = "🔨 FASE 2: Tablas organizacionales obsoletas demolidas para reestructuración.";
 
-        // FASE 3: Reconstrucción quirúrgica bajo el nuevo plano (Muni -> Depto -> Oficina -> Puesto)
+        // FASE 1: Alteraciones sobre tablas existentes (Sin borrar sus datos)
         
-        // 1. Tabla Municipalidades
-        Schema::create('municipalidades', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            $table->string('codigo_muni', 50)->nullable(); // Campo personalizado inyectado
-            $table->string('departamento')->nullable();
-            $table->string('logo')->nullable();
-            $table->timestamps();
-        });
-        $reporte[] = "🏢 Estructura: Tabla 'municipalidades' reconstruida.";
+        // 1. Inyectar columna 'ubicacion_id' a la tabla 'oficinas' (Si no existe)
+        if (!Schema::hasColumn('oficinas', 'ubicacion_id')) {
+            DB::statement("ALTER TABLE oficinas ADD COLUMN ubicacion_id BIGINT UNSIGNED NULL AFTER departamento_id;");
+            $reporte[] = "➕ Campo 'ubicacion_id' añadido con éxito a la tabla 'oficinas'.";
+        } else {
+            $reporte[] = "ℹ️ El campo 'ubicacion_id' ya existía en 'oficinas'.";
+        }
 
-        // 2. Tabla Departamentos (Padre: Municipalidad)
-        Schema::create('departamentos', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            $table->foreignId('municipalidad_id')->constrained('municipalidades')->onDelete('cascade');
-            $table->unsignedBigInteger('responsable_id')->nullable();
-            $table->timestamps();
-        });
-        $reporte[] = "📂 Estructura: Tabla 'departamentos' vinculada a Municipalidad.";
+        // 2. Inyectar campos de Factura e Inventariado a la tabla 'activos'
+        if (!Schema::hasColumn('activos', 'numero_factura')) {
+            DB::statement("ALTER TABLE activos ADD COLUMN numero_factura VARCHAR(255) NULL AFTER costo_original;");
+            $reporte[] = "➕ Campo 'numero_factura' añadido con éxito a la tabla 'activos'.";
+        }
+        if (!Schema::hasColumn('activos', 'numero_inventario')) {
+            DB::statement("ALTER TABLE activos ADD COLUMN numero_inventario VARCHAR(255) NULL AFTER numero_factura;");
+            $reporte[] = "➕ Campo 'numero_inventario' añadido con éxito a la tabla 'activos'.";
+        }
 
-        // 3. Tabla Oficinas (Padre: Departamento)
-        Schema::create('oficinas', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            $table->foreignId('departamento_id')->constrained('departamentos')->onDelete('cascade');
-            $table->timestamps();
-        });
-        $reporte[] = "🏢 Estructura: Tabla 'oficinas' vinculada a Departamento.";
+        // 3. Modificar el largo del nombre de categorías a 100 caracteres
+        DB::statement("ALTER TABLE categorias MODIFY COLUMN nombre VARCHAR(100) NOT NULL;");
+        $reporte[] = "🏷️ Longitud de caracteres en tabla 'categorias' ampliada a 100 exitosamente.";
 
-        // 4. Tabla Puestos (Padre: Oficina)
-        Schema::create('puestos', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            $table->foreignId('oficina_id')->constrained('oficinas')->onDelete('cascade');
-            $table->unsignedBigInteger('empleado_jefe_id')->nullable();
-            $table->timestamps();
-        });
-        $reporte[] = "💼 Estructura: Tabla 'puestos' vinculada a Oficina.";
 
-        // FASE 4: Inyección de datos raíz (Multi-Muni)
+        // FASE 2: Creación Controlada de las Nuevas Tablas de Expansión
+        
+        // 1. Nueva Tabla: Ubicaciones
+        if (!Schema::hasTable('ubicaciones')) {
+            Schema::create('ubicaciones', function (Blueprint $table) {
+                $table->id();
+                $table->string('codigo')->unique();
+                $table->string('nombre');
+                $table->text('observacion')->nullable();
+                $table->foreignId('oficina_id')->constrained('oficinas')->onDelete('cascade');
+                $table->timestamps();
+            });
+            $reporte[] = "✅ Nueva tabla 'ubicaciones' creada correctamente.";
+        }
+
+        // 2. Nueva Tabla: Bienes Varios (Ligado a Oficina, NO a Empleados)
+        if (!Schema::hasTable('bienes_varios')) {
+            Schema::create('bienes_varios', function (Blueprint $table) {
+                $table->id();
+                $table->string('codigo_qr')->nullable();
+                $table->string('descripcion');
+                $table->string('marca')->nullable();
+                $table->decimal('costo', 10, 2)->default(0.00);
+                $table->date('fecha_compra')->nullable();
+                $table->string('numero_factura')->nullable();
+                $table->string('numero_inventario')->nullable();
+                $table->string('estado')->default('Excelente');
+                $table->date('fecha_baja')->nullable();
+                
+                $table->foreignId('categoria_id')->constrained('categorias')->onDelete('cascade');
+                $table->foreignId('proveedor_id')->nullable()->constrained('proveedores')->onDelete('set null');
+                $table->foreignId('oficina_id')->constrained('oficinas')->onDelete('cascade');
+                $table->timestamps();
+            });
+            $reporte[] = "✅ Nueva tabla 'bienes_varios' creada correctamente.";
+        }
+
+        // 3. Nueva Tabla: Control de Obras (Ligado directo a la Municipalidad)
+        if (!Schema::hasTable('control_obras')) {
+            Schema::create('control_obras', function (Blueprint $table) {
+                $table->id();
+                $table->string('snip')->unique();
+                $table->string('nombre_proyecto');
+                $table->string('numero_contrato')->nullable();
+                $table->decimal('monto', 12, 2)->default(0.00);
+                $table->date('fecha')->nullable();
+                $table->foreignId('municipalidad_id')->constrained('municipalidades')->onDelete('cascade');
+                $table->timestamps();
+            });
+            $reporte[] = "✅ Nueva tabla 'control_obras' creada correctamente.";
+        }
+
+        // FASE 3: Sincronización de Seguridad y Estado Inicial de Cuentas
         $muniId = env('MUNICIPALIDAD_DEFAULT_ID', 1);
         Municipalidad::updateOrCreate(
             ['id' => $muniId],
@@ -386,25 +412,23 @@ Route::get('/limpieza-profunda-jerarquia', function () {
                 'departamento' => 'Guatemala',
             ]
         );
-        $reporte[] = "📝 FASE 4: Fila maestra cargada en 'municipalidades' (ID: {$muniId} | Código: 910).";
 
-        // FASE 5: Sincronización del Superusuario Administrador con Rol Forzado
         User::updateOrCreate(
             ['email' => 'admin@muni.com'],
             [
                 'name' => 'Admin Municipal',
                 'password' => Hash::make('Muni2026*'),
-                'rol' => 'admin', // Forzamos el rol guardado en la base de datos
+                'rol' => 'admin',
             ]
         );
-        $reporte[] = "👑 FASE 5: Superusuario 'admin@muni.com' inyectado con rol 'admin'.";
+        $reporte[] = "👑 FASE 3: Credenciales del Administrador Maestro validadas y aseguradas.";
 
-        // Reactivamos el motor de restricciones relacionales
+        // Volvemos a activar las restricciones de llaves foráneas
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         return response()->json([
             'status' => 'success',
-            'message' => '🚀 ¡DEPLOY DE NUEVA JERARQUÍA COMPLETADO EN EL SERVIDOR CON ÉXITO!',
+            'message' => '🚀 ¡BASE DE DATOS EN PRODUCCIÓN EXPANDIDA Y PARCHADA CON ÉXITO SIN PÉRDIDA DE DATOS!',
             'steps' => $reporte
         ], 200);
 
@@ -412,7 +436,7 @@ Route::get('/limpieza-profunda-jerarquia', function () {
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         return response()->json([
             'status' => 'error',
-            'message' => '❌ Ocurrió un error fatal en la reconstrucción del servidor.',
+            'message' => '❌ Falló la inyección automatizada de la fase 2 en producción.',
             'error_details' => $e->getMessage()
         ], 500);
     }

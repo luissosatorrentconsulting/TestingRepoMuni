@@ -7,22 +7,31 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Oficina extends Model
 {
-    // Cambiado: Su padre ahora es el Departamento
-    protected $fillable = ['nombre', 'departamento_id'];
+    // Agregamos 'ubicacion_id' al fillable
+    protected $fillable = ['nombre', 'departamento_id', 'ubicacion_id'];
 
-    // Una oficina pertenece a un Departamento
     public function departamento()
     {
         return $this->belongsTo(Departamento::class);
     }
 
-    // Una oficina ahora tiene muchos Puestos
     public function puestos()
     {
         return $this->hasMany(Puesto::class);
     }
 
-    // Agregamos Global Scope para heredar la seguridad Multi-Muni a través del departamento
+    // NUEVA RELACIÓN: Una oficina tiene muchas ubicaciones detalladas
+    public function ubicaciones()
+    {
+        return $this->hasMany(Ubicacion::class);
+    }
+
+    // NUEVA RELACIÓN: Una oficina puede marcar una ubicación como su sede/principal
+    public function ubicacionPrincipal()
+    {
+        return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
+    }
+
     protected static function booted()
     {
         static::addGlobalScope('municipalidad', function (Builder $builder) {

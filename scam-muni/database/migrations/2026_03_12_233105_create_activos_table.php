@@ -27,6 +27,8 @@ public function up(): void
         $table->decimal('valor_desecho', 15, 2)->default(0);
         
         $table->boolean('es_baja')->default(false);
+        $table->string('numero_factura')->nullable();
+$table->string('numero_inventario')->nullable();
         $table->timestamps();
     });
 }
