@@ -266,29 +266,25 @@ Route::get('/limpiar-permisos', function () {
     return "⚡ Permisos reiniciados en caliente.";
 });
 
-// --- RUTA QUIRÚRGICA: SOLUCIONAR PUESTO_ID EN EMPLEADOS ---
+// --- RUTA QUIRÚRGICA: EXPANDIR PREFIJO DE CATEGORÍAS A 100 ---
 Route::get('/limpieza-profunda-jerarquia', function () {
     $reporte = [];
     try {
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        // Asegurar que la columna 'puesto_id' exista en la tabla empleados
-        if (Schema::hasTable('empleados')) {
-            if (!Schema::hasColumn('empleados', 'puesto_id')) {
-                DB::statement("ALTER TABLE empleados ADD COLUMN puesto_id BIGINT UNSIGNED NULL AFTER dpi;");
-                $reporte[] = "➕ Columna 'puesto_id' agregada con éxito a la tabla 'empleados'.";
-            } else {
-                $reporte[] = "ℹ️ La columna 'puesto_id' ya existía en la tabla.";
-            }
+        // Modificamos la columna prefijo para que acepte 100 caracteres
+        if (Schema::hasTable('categorias')) {
+            DB::statement("ALTER TABLE categorias MODIFY COLUMN prefijo VARCHAR(100) NOT NULL;");
+            $reporte[] = "🏷️ ¡Columna 'prefijo' ampliada exitosamente a 100 caracteres en la tabla categorias!";
         } else {
-            $reporte[] = "❌ No se encontró la tabla 'empleados'.";
+            $reporte[] = "❌ No se encontró la tabla 'categorias'.";
         }
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
         return response()->json([
             'status' => 'success',
-            'message' => '🚀 ¡Parche de empleados aplicado en producción!',
+            'message' => '🚀 ¡Estructura de categorías actualizada en producción!',
             'steps' => $reporte
         ], 200);
 
@@ -296,7 +292,7 @@ Route::get('/limpieza-profunda-jerarquia', function () {
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
         return response()->json([
             'status' => 'error',
-            'message' => '❌ No se pudo aplicar el parche.',
+            'message' => '❌ No se pudo modificar el largo del prefijo.',
             'error_details' => $e->getMessage()
         ], 500);
     }

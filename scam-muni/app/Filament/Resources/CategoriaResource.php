@@ -26,7 +26,7 @@ class CategoriaResource extends Resource
                 TextInput::make('prefijo')
                     ->label('Prefijo (ej. MOB)')
                     ->required()
-                    ->maxLength(10),
+                    ->maxLength(100),
                 TextInput::make('nombre')
                     ->label('Nombre de la Categoría')
                     ->required(),
