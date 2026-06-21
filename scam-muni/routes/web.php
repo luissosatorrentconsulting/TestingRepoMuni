@@ -266,34 +266,37 @@ Route::get('/limpiar-permisos', function () {
     return "⚡ Permisos reiniciados en caliente.";
 });
 
-// --- RUTA RESOLUTIVA DEFINITIVA: RESET LINEAL Y SIN CÓDIGO EN PRODUCCIÓN ---
+// --- RUTA QUIRÚRGICA: SOLUCIONAR PUESTO_ID EN EMPLEADOS ---
 Route::get('/limpieza-profunda-jerarquia', function () {
+    $reporte = [];
     try {
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        // 1. Borramos la tabla vieja por completo
-        Schema::dropIfExists('ubicaciones');
-        
-        // 2. La recreamos limpia: SIN oficina_id y SIN codigo
-        Schema::create('ubicaciones', function (Blueprint $table) {
-            $table->id(); // Su propio ID único autoincremental
-            $table->string('nombre');
-            $table->text('observacion')->nullable();
-            $table->timestamps();
-        });
+        // Asegurar que la columna 'puesto_id' exista en la tabla empleados
+        if (Schema::hasTable('empleados')) {
+            if (!Schema::hasColumn('empleados', 'puesto_id')) {
+                DB::statement("ALTER TABLE empleados ADD COLUMN puesto_id BIGINT UNSIGNED NULL AFTER dpi;");
+                $reporte[] = "➕ Columna 'puesto_id' agregada con éxito a la tabla 'empleados'.";
+            } else {
+                $reporte[] = "ℹ️ La columna 'puesto_id' ya existía en la tabla.";
+            }
+        } else {
+            $reporte[] = "❌ No se encontró la tabla 'empleados'.";
+        }
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
         return response()->json([
             'status' => 'success',
-            'message' => '💥 ¡Tabla ubicaciones recreada con éxito! Campo código eliminado y estructura 100% limpia.'
+            'message' => '🚀 ¡Parche de empleados aplicado en producción!',
+            'steps' => $reporte
         ], 200);
 
     } catch (\Exception $e) {
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
         return response()->json([
             'status' => 'error',
-            'message' => '❌ No se pudo aplicar el plan de emergencia.',
+            'message' => '❌ No se pudo aplicar el parche.',
             'error_details' => $e->getMessage()
         ], 500);
     }
