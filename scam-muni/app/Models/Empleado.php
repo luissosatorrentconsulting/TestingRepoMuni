@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Empleado extends Model
 {
+    use SoftDeletes;
+
     // Agregamos 'puesto_id' y mantenemos los demás
     protected $fillable = [
         'municipalidad_id', 

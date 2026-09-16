@@ -86,9 +86,13 @@ class AsignacionResource extends Resource
                     ->placeholder('Todas')
                     ->trueLabel('Solo vigentes')
                     ->falseLabel('Solo históricas'),
+
+                Tables\Filters\TrashedFilter::make(),
             ])
          ->actions([
     Tables\Actions\EditAction::make()->label('Corregir'),
+    Tables\Actions\RestoreAction::make(),
+    Tables\Actions\ForceDeleteAction::make(),
 
     Tables\Actions\Action::make('reasignar')
         ->label('Reasignar')
@@ -147,6 +151,8 @@ class AsignacionResource extends Resource
 ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\RestoreBulkAction::make(),
+                Tables\Actions\ForceDeleteBulkAction::make(),
             ]);
 
             

@@ -60,6 +60,25 @@ return new class extends Migration
                 $table->unsignedBigInteger('puesto_id')->nullable()->after('dpi');
             }
         });
+
+        // Bug preexistente: Municipalidad::$fillable incluye 'nit', pero la
+        // migración original quedó comentada y nunca se creó esa columna.
+        Schema::table('municipalidades', function (Blueprint $table) {
+            if (!Schema::hasColumn('municipalidades', 'nit')) {
+                $table->string('nit')->nullable()->after('nombre');
+            }
+        });
+
+        // Borrado suave para Activos, Empleados y Asignaciones: hoy un
+        // "Eliminar" es permanente e irrecuperable, riesgoso para datos que
+        // deben quedar auditables.
+        foreach (['activos', 'empleados', 'asignaciones'] as $tabla) {
+            Schema::table($tabla, function (Blueprint $table) use ($tabla) {
+                if (!Schema::hasColumn($tabla, 'deleted_at')) {
+                    $table->softDeletes();
+                }
+            });
+        }
     }
 
     public function down(): void

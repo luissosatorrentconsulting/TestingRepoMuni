@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo; // <--- AGREGADO
 use Illuminate\Database\Eloquent\Relations\HasMany;  // <--- AGREGADO
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Activo extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'municipalidad_id', 'categoria_id', 'codigo_etiqueta',
         'descripcion', 'marca', 'modelo', 'serie',

@@ -209,9 +209,13 @@ class ActivoResource extends Resource
                         false: fn (Builder $query) => $query->where('es_baja', false),
                         blank: fn (Builder $query) => $query->where('es_baja', false),
                     ),
+
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
 
                 Tables\Actions\Action::make('historial')
                     ->label('Historial')
@@ -262,6 +266,8 @@ class ActivoResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ])
             ->headerActions([
