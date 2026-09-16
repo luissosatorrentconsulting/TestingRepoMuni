@@ -50,6 +50,16 @@ return new class extends Migration
                 $table->string('codigo_muni', 50)->nullable()->after('id');
             }
         });
+
+        // Bug preexistente: Empleado::$fillable y el formulario usan 'puesto_id'
+        // (relación con la nueva tabla puestos), pero ninguna migración lo creó.
+        // Ya existe en producción (se agregó a mano en algún momento), así que
+        // esto solo importa para levantar un entorno nuevo desde cero.
+        Schema::table('empleados', function (Blueprint $table) {
+            if (!Schema::hasColumn('empleados', 'puesto_id')) {
+                $table->unsignedBigInteger('puesto_id')->nullable()->after('dpi');
+            }
+        });
     }
 
     public function down(): void

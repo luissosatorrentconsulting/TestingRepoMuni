@@ -65,7 +65,7 @@
             </td>
             <td width="30%">
                 <span class="label">Departamento</span><br>
-                <span class="value">{{ strtoupper($empleado->puesto_oficial->departamento->nombre ?? 'N/A') }}</span>
+                <span class="value">{{ strtoupper($empleado->puesto_oficial?->oficina?->departamento?->nombre ?? 'N/A') }}</span>
             </td>
         </tr>
     </table>

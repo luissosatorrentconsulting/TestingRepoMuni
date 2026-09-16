@@ -6,10 +6,13 @@ use App\Models\Activo;
 use App\Models\Asignacion;
 use App\Models\Categoria;
 use App\Models\Color;
+use App\Models\Departamento;
 use App\Models\Empleado;
 use App\Models\Marca;
 use App\Models\Municipalidad;
+use App\Models\Oficina;
 use App\Models\Proveedor;
+use App\Models\Puesto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -37,7 +40,10 @@ class SmokeTest extends TestCase
         $marca = Marca::create(['nombre' => 'HP', 'municipalidad_id' => 1]);
         $color = Color::create(['nombre' => 'Negro', 'municipalidad_id' => 1]);
         $proveedor = Proveedor::create(['nombre' => 'Prov', 'municipalidad_id' => 1]);
-        $empleado = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '123', 'activo' => true]);
+        $departamento = Departamento::create(['nombre' => 'Recursos Humanos', 'municipalidad_id' => 1]);
+        $oficina = Oficina::create(['nombre' => 'Oficina Central', 'departamento_id' => $departamento->id]);
+        $puesto = Puesto::create(['nombre' => 'Encargado', 'oficina_id' => $oficina->id]);
+        $empleado = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '123', 'activo' => true, 'puesto_id' => $puesto->id]);
 
         $activo = Activo::create([
             'categoria_id' => $categoria->id,
@@ -70,6 +76,7 @@ class SmokeTest extends TestCase
             '/admin/asignacions',
             '/admin/asignacions/create',
             '/admin/empleados',
+            '/admin/empleados/create',
             "/admin/empleados/{$empleado->id}/edit",
             '/admin/categorias',
         ];

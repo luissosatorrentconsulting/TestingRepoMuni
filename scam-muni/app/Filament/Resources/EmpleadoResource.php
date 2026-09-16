@@ -41,10 +41,13 @@ class EmpleadoResource extends Resource
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->createOptionForm([ 
+                            ->createOptionForm([
                                 Forms\Components\TextInput::make('nombre')->required(),
-                                Forms\Components\Select::make('departamento_id')
-                                    ->relationship('departamento', 'nombre')
+                                Forms\Components\Select::make('oficina_id')
+                                    ->label('Oficina Perteneciente')
+                                    ->relationship('oficina', 'nombre')
+                                    ->searchable()
+                                    ->preload()
                                     ->required(),
                             ]),
                             
@@ -67,7 +70,7 @@ class EmpleadoResource extends Resource
                 
                 Tables\Columns\TextColumn::make('puesto_oficial.nombre')
                     ->label('Cargo Oficial')
-                    ->description(fn (Empleado $record): string => $record->puesto_oficial?->departamento?->nombre ?? 'Sin Departamento'),
+                    ->description(fn (Empleado $record): string => $record->puesto_oficial?->oficina?->departamento?->nombre ?? 'Sin Departamento'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

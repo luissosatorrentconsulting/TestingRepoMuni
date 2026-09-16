@@ -39,7 +39,7 @@ Route::get('/reporte-historial/{activo}', function (Activo $activo) {
 // Reporte de Resguardo de Empleado (Tarjeta de Responsabilidad)
 Route::get('/empleado/{empleado}/resguardo-pdf', function (Empleado $empleado) {
     $muni = Municipalidad::find(config('app.muni_id', 1));
-    $empleado->load(['puesto_oficial.departamento']);
+    $empleado->load(['puesto_oficial.oficina.departamento']);
 
     $activos = Activo::whereHas('asignaciones', function ($query) use ($empleado) {
         $query->where('empleado_id', $empleado->id);
@@ -57,7 +57,7 @@ Route::get('/empleado/{empleado}/resguardo-pdf', function (Empleado $empleado) {
 // Reporte de Traslados
 Route::get('/empleado/{empleado}/traslados-pdf', function (Empleado $empleado) {
     $muni = Municipalidad::find(config('app.muni_id', 1));
-    $empleado->load(['puesto_oficial.departamento']);
+    $empleado->load(['puesto_oficial.oficina.departamento']);
 
     $traslados = \App\Models\MovimientoActivo::where('entregado_por_id', $empleado->id)
         ->orWhere('recibido_por_id', $empleado->id)
@@ -314,6 +314,15 @@ Route::get('/fix-db-fase2', function () {
             if (!Schema::hasColumn('municipalidades', 'codigo_muni')) {
                 $table->string('codigo_muni', 50)->nullable()->after('id');
                 $reporte[] = "✅ Columna 'codigo_muni' agregada a municipalidades.";
+            }
+        });
+    }
+
+    if (Schema::hasTable('empleados')) {
+        Schema::table('empleados', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('empleados', 'puesto_id')) {
+                $table->unsignedBigInteger('puesto_id')->nullable()->after('dpi');
+                $reporte[] = "✅ Columna 'puesto_id' agregada a empleados.";
             }
         });
     }
