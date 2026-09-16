@@ -102,9 +102,9 @@
                 <tr>
                     <td class="text-center"><strong>{{ $t->activo->codigo_etiqueta }}</strong></td>
                     <td>{{ strtoupper($t->activo->descripcion) }}</td>
-                    <td class="text-center">{{ strtoupper($t->activo->marca ?? 'N/A') }}</td>
+                    <td class="text-center">{{ strtoupper($t->activo->marcaInfo->nombre ?? 'N/A') }}</td>
                     <td class="text-center">{{ strtoupper($t->activo->modelo ?? 'N/A') }}</td>
-                    <td class="text-center">{{ strtoupper($t->activo->color ?? 'N/A') }}</td>
+                    <td class="text-center">{{ strtoupper($t->activo->colorInfo->nombre ?? 'N/A') }}</td>
                     <td class="text-center">{{ $t->fecha_movimiento->format('d/m/Y') }}</td>
                     <td class="text-right">{{ number_format($valor, 2) }}</td>
                     <td class="text-right">0.00</td>

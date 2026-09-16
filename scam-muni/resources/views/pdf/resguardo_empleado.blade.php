@@ -91,7 +91,7 @@
                 <td align="center">{{ $index + 1 }}</td>
                 <td align="center"><strong>{{ $activo->codigo_etiqueta }}</strong></td>
                 <td>{{ strtoupper($activo->descripcion) }}</td>
-                <td align="center">{{ strtoupper($activo->marca ?? 'N/A') }}</td>
+                <td align="center">{{ strtoupper($activo->marcaInfo->nombre ?? 'N/A') }}</td>
                 <td align="center">{{ strtoupper($activo->serie ?? 'S/S') }}</td>
                 <td align="center">{{ strtoupper($activo->estado ?? 'B') }}</td>
                 <td class="text-right">{{ number_format($activo->costo_original, 2) }}</td>

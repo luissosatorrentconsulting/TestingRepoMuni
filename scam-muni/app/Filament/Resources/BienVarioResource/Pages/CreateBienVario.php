@@ -9,4 +9,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateBienVario extends CreateRecord
 {
     protected static string $resource = BienVarioResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

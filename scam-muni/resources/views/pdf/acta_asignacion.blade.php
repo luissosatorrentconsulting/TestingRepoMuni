@@ -8,7 +8,7 @@
     <table>
         <tr><th>Código</th><td>{{ $asignacion->activo->codigo_etiqueta }}</td></tr>
         <tr><th>Descripción</th><td>{{ $asignacion->activo->descripcion }}</td></tr>
-        <tr><th>Marca/Modelo</th><td>{{ $asignacion->activo->marca }} / {{ $asignacion->activo->modelo }}</td></tr>
+        <tr><th>Marca/Modelo</th><td>{{ $asignacion->activo->marcaInfo->nombre ?? 'N/A' }} / {{ $asignacion->activo->modelo }}</td></tr>
     </table>
 
     <p style="margin-top: 30px;"><strong>Observaciones:</strong> {{ $asignacion->observaciones ?? 'Sin observaciones' }}</p>

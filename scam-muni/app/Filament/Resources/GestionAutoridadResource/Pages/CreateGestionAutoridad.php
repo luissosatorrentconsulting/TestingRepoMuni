@@ -9,4 +9,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateGestionAutoridad extends CreateRecord
 {
     protected static string $resource = GestionAutoridadResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

@@ -42,7 +42,11 @@ class AsignacionesRelationManager extends RelationManager
             Tables\Columns\TextColumn::make('documento_respaldo')
                 ->label('No. Acta')
                 ->placeholder('Sin acta'),
-                
+
+            Tables\Columns\IconColumn::make('activa')
+                ->label('Vigente')
+                ->boolean(),
+
             // Un estado para saber si es la asignación actual
             Tables\Columns\IconColumn::make('activo.es_baja')
                 ->label('¿Sigue Activo?')

@@ -21,8 +21,6 @@ class BienVarioResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('codigo_qr')
-                    ->label('Código QR'),
                 Forms\Components\TextInput::make('descripcion')
                     ->label('Descripción')
                     ->required(),
@@ -32,8 +30,16 @@ class BienVarioResource extends Resource
                     ->required()
                     ->searchable()
                     ->preload(),
-                Forms\Components\TextInput::make('marca')
-                    ->label('Marca'),
+                Forms\Components\Select::make('marca_id')
+                    ->label('Marca')
+                    ->relationship('marcaInfo', 'nombre')
+                    ->searchable()
+                    ->preload()
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('nombre')
+                            ->label('Nombre de la Marca')
+                            ->required(),
+                    ]),
                 Forms\Components\TextInput::make('costo')
                     ->numeric()
                     ->prefix('Q')
@@ -49,6 +55,10 @@ class BienVarioResource extends Resource
                     ->preload(),
                 Forms\Components\TextInput::make('numero_inventario')
                     ->label('No. Inventariado'),
+                Forms\Components\Toggle::make('no_suma_inventario')
+                    ->label('No suma a inventario')
+                    ->helperText('Actívelo solo para excluir este bien del conteo total de inventario.')
+                    ->default(false),
                 Forms\Components\Select::make('estado')
                     ->options([
                         'Excelente' => 'Excelente',
@@ -76,6 +86,7 @@ class BienVarioResource extends Resource
                 Tables\Columns\TextColumn::make('numero_inventario')->label('No. Inventario')->searchable(),
                 Tables\Columns\TextColumn::make('descripcion')->label('Descripción')->searchable(),
                 Tables\Columns\TextColumn::make('categoria.nombre')->label('Categoría'),
+                Tables\Columns\TextColumn::make('marcaInfo.nombre')->label('Marca'),
                 Tables\Columns\TextColumn::make('oficina.nombre')->label('Oficina'),
                 Tables\Columns\TextColumn::make('estado')->badge(),
             ])

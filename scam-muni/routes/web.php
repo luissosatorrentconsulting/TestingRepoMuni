@@ -60,7 +60,8 @@ Route::get('/empleado/{empleado}/traslados-pdf', function (Empleado $empleado) {
     $empleado->load(['puesto_oficial.departamento']);
 
     $traslados = \App\Models\MovimientoActivo::where('entregado_por_id', $empleado->id)
-        ->with(['activo.categoria', 'receptor'])
+        ->orWhere('recibido_por_id', $empleado->id)
+        ->with(['activo.categoria', 'entregador', 'receptor'])
         ->orderBy('fecha_movimiento', 'desc')
         ->get();
 
@@ -267,6 +268,90 @@ Route::get('/limpiar-permisos', function () {
 });
 
 // --- RUTA QUIRÚRGICA: EXPANDIR PREFIJO DE CATEGORÍAS A 100 ---
+// RUTA DE MANTENIMIENTO: Cambios de BD para Fase 2 (baja, inventario, reasignación)
+Route::get('/fix-db-fase2', function () {
+    $reporte = [];
+
+    Schema::table('activos', function (Blueprint $table) use (&$reporte) {
+        if (!Schema::hasColumn('activos', 'fecha_baja')) {
+            $table->date('fecha_baja')->nullable()->after('es_baja');
+            $reporte[] = "✅ Columna 'fecha_baja' agregada a activos.";
+        }
+        if (!Schema::hasColumn('activos', 'motivo_baja')) {
+            $table->text('motivo_baja')->nullable()->after('fecha_baja');
+            $reporte[] = "✅ Columna 'motivo_baja' agregada a activos.";
+        }
+        if (!Schema::hasColumn('activos', 'no_suma_inventario')) {
+            $table->boolean('no_suma_inventario')->default(false)->after('numero_inventario');
+            $reporte[] = "✅ Columna 'no_suma_inventario' agregada a activos.";
+        }
+    });
+
+    if (Schema::hasTable('bienes_varios')) {
+        Schema::table('bienes_varios', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('bienes_varios', 'marca_id')) {
+                $table->foreignId('marca_id')->nullable()->after('marca')->constrained('marcas')->onDelete('set null');
+                $reporte[] = "✅ Columna 'marca_id' agregada a bienes_varios.";
+            }
+            if (!Schema::hasColumn('bienes_varios', 'no_suma_inventario')) {
+                $table->boolean('no_suma_inventario')->default(false)->after('numero_inventario');
+                $reporte[] = "✅ Columna 'no_suma_inventario' agregada a bienes_varios.";
+            }
+        });
+    }
+
+    if (Schema::hasTable('categorias')) {
+        Schema::table('categorias', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('categorias', 'nombre')) {
+                $table->string('nombre')->default('')->after('prefijo');
+                $reporte[] = "✅ Columna 'nombre' agregada a categorias (bug preexistente: faltaba desde siempre).";
+            }
+        });
+    }
+
+    if (Schema::hasTable('municipalidades')) {
+        Schema::table('municipalidades', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('municipalidades', 'codigo_muni')) {
+                $table->string('codigo_muni', 50)->nullable()->after('id');
+                $reporte[] = "✅ Columna 'codigo_muni' agregada a municipalidades.";
+            }
+        });
+    }
+
+    if (Schema::hasTable('asignaciones')) {
+        Schema::table('asignaciones', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('asignaciones', 'activa')) {
+                $table->boolean('activa')->default(true)->after('observaciones');
+                $reporte[] = "✅ Columna 'activa' agregada a asignaciones.";
+            }
+        });
+
+        if (Schema::hasColumn('asignaciones', 'activa')) {
+            // MySQL no permite hacer UPDATE de una tabla usando una subconsulta
+            // sobre esa misma tabla ("target table for update in FROM clause"),
+            // así que resolvemos los IDs vigentes en PHP primero.
+            $idsVigentes = DB::table('asignaciones')
+                ->selectRaw('MAX(id) as id')
+                ->groupBy('activo_id')
+                ->pluck('id');
+
+            DB::table('asignaciones')->whereIn('id', $idsVigentes)->update(['activa' => true]);
+            DB::table('asignaciones')->whereNotIn('id', $idsVigentes)->update(['activa' => false]);
+
+            $reporte[] = "✅ Backfill de 'activa': solo la asignación más reciente de cada activo queda marcada como vigente.";
+        }
+    }
+
+    try {
+        Artisan::call('filament:optimize-clear');
+        $reporte[] = "⚡ Caché de Filament limpiada.";
+    } catch (\Exception $e) {
+        $reporte[] = "⚠️ Error en caché: " . $e->getMessage();
+    }
+
+    return count($reporte) > 0 ? implode("<br>", $reporte) : "La base de datos ya está al día (fase 2).";
+});
+
 Route::get('/limpieza-profunda-jerarquia', function () {
     $reporte = [];
     try {

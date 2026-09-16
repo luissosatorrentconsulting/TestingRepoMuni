@@ -9,6 +9,14 @@ class AsignacionObserver
 {
     public function created(Asignacion $asignacion): void
     {
+        // Cerramos cualquier otra asignación vigente del mismo activo: solo la
+        // más reciente queda "activa", así el activo vuelve a estar disponible
+        // para asignar/reasignar y no queda "atrapado" para siempre.
+        Asignacion::where('activo_id', $asignacion->activo_id)
+            ->where('id', '!=', $asignacion->id)
+            ->where('activa', true)
+            ->update(['activa' => false]);
+
         // 1. Buscamos el último movimiento de este activo para saber quién entrega
         $ultimoMovimiento = MovimientoActivo::where('activo_id', $asignacion->activo_id)
             ->orderBy('fecha_movimiento', 'desc')

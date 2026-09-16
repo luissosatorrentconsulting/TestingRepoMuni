@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Builder;
 class Asignacion extends Model
 {
     protected $table = 'asignaciones';
-    protected $fillable = ['activo_id', 'empleado_id', 'fecha_asignacion', 'documento_respaldo', 'observaciones'];
+    protected $fillable = ['activo_id', 'empleado_id', 'fecha_asignacion', 'documento_respaldo', 'observaciones', 'activa'];
+
+    protected $casts = [
+        'activa' => 'boolean',
+    ];
 
     protected static function booted()
     {

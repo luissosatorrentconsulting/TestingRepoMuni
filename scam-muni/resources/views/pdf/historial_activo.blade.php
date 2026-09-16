@@ -76,12 +76,12 @@
     {{-- Especificaciones Técnicas --}}
     <table class="specs-table">
         <tr>
-            <td><span class="s-label">Color</span><span class="s-value">{{ $activo->color ?? 'N/A' }}</span></td>
+            <td><span class="s-label">Color</span><span class="s-value">{{ $activo->colorInfo->nombre ?? 'N/A' }}</span></td>
             <td><span class="s-label">Categoría</span><span class="s-value">{{ $activo->categoria->nombre }}</span></td>
             <td><span class="s-label">No. Serie</span><span class="s-value">{{ $activo->serie ?? 'S/S' }}</span></td>
         </tr>
         <tr>
-            <td><span class="s-label">Marca</span><span class="s-value">{{ $activo->marca ?? '---' }}</span></td>
+            <td><span class="s-label">Marca</span><span class="s-value">{{ $activo->marcaInfo->nombre ?? '---' }}</span></td>
             <td><span class="s-label">Modelo</span><span class="s-value">{{ $activo->modelo ?? '---' }}</span></td>
             <td><span class="s-label">Estado</span><span class="s-value">{{ $activo->estado ?? 'BUENO' }}</span></td>
         </tr>

@@ -1,0 +1,88 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Filament\Resources\ActivoResource\Pages\ListActivos;
+use App\Filament\Resources\AsignacionResource\Pages\ListAsignacions;
+use App\Models\Activo;
+use App\Models\Asignacion;
+use App\Models\Categoria;
+use App\Models\Color;
+use App\Models\Empleado;
+use App\Models\Marca;
+use App\Models\Municipalidad;
+use App\Models\Proveedor;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class ActionsSmokeTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['app.muni_id' => 1]);
+    }
+
+    public function test_reasignar_and_baja_actions_work(): void
+    {
+        Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
+        $marca = Marca::create(['nombre' => 'HP', 'municipalidad_id' => 1]);
+        $color = Color::create(['nombre' => 'Negro', 'municipalidad_id' => 1]);
+        $proveedor = Proveedor::create(['nombre' => 'Prov', 'municipalidad_id' => 1]);
+        $emp1 = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '123', 'activo' => true]);
+        $emp2 = Empleado::create(['nombre_completo' => 'Maria Lopez', 'dpi' => '456', 'activo' => true]);
+
+        $activo = Activo::create([
+            'categoria_id' => $categoria->id,
+            'descripcion' => 'Laptop',
+            'marca_id' => $marca->id,
+            'color_id' => $color->id,
+            'proveedor_id' => $proveedor->id,
+            'estado' => 'BUENO',
+            'costo_original' => 1000,
+            'fecha_compra' => now(),
+            'valor_desecho' => 0,
+        ]);
+
+        $asignacion = Asignacion::create([
+            'activo_id' => $activo->id,
+            'empleado_id' => $emp1->id,
+            'fecha_asignacion' => now(),
+            'documento_respaldo' => 'ACTA-1',
+            'observaciones' => 'Entrega',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ListAsignacions::class)
+            ->callTableAction('reasignar', $asignacion->fresh(), data: [
+                'empleado_id' => $emp2->id,
+                'fecha_asignacion' => now()->toDateString(),
+                'documento_respaldo' => 'ACTA-2',
+                'observaciones' => 'Reasignacion de prueba',
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertFalse($asignacion->fresh()->activa);
+        $this->assertEquals(2, Asignacion::where('activo_id', $activo->id)->count());
+        $this->assertEquals(2, \App\Models\MovimientoActivo::where('activo_id', $activo->id)->count());
+
+        Livewire::test(ListActivos::class)
+            ->callTableAction('baja', $activo, data: [
+                'fecha_baja' => now()->toDateString(),
+                'motivo_baja' => 'Ya no sirve',
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $activo->refresh();
+        $this->assertTrue($activo->es_baja);
+        $this->assertNotNull($activo->fecha_baja);
+        $this->assertEquals('Ya no sirve', $activo->motivo_baja);
+    }
+}

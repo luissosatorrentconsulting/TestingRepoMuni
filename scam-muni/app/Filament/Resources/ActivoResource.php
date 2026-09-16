@@ -60,7 +60,7 @@ class ActivoResource extends Resource
                         // CAMBIO: Select para Marca con botón de crear nuevo (+)
                         Forms\Components\Select::make('marca_id')
                             ->label('Marca')
-                            ->relationship('marca', 'nombre')
+                            ->relationship('marcaInfo', 'nombre')
                             ->searchable()
                             ->preload()
                             ->createOptionForm([
@@ -79,7 +79,7 @@ class ActivoResource extends Resource
                         // CAMBIO: Select para Color con botón de crear nuevo (+)
                         Forms\Components\Select::make('color_id')
                             ->label('Color')
-                            ->relationship('color', 'nombre')
+                            ->relationship('colorInfo', 'nombre')
                             ->searchable()
                             ->preload()
                             ->createOptionForm([
@@ -117,7 +117,13 @@ class ActivoResource extends Resource
 
                         Forms\Components\Textarea::make('observaciones_activo')
                             ->label('Observaciones del Bien')
-                            ->columnSpanFull(), 
+                            ->columnSpanFull(),
+
+                        Forms\Components\Toggle::make('no_suma_inventario')
+                            ->label('No suma a inventario')
+                            ->helperText('Actívelo solo para excluir este bien del conteo total de inventario.')
+                            ->default(false)
+                            ->columnSpanFull(),
                     ])->columns(3),
 
                 Forms\Components\Section::make('Información de Adquisición')
@@ -137,6 +143,9 @@ class ActivoResource extends Resource
                             ->label('Valor de Desecho')
                             ->numeric()
                             ->default(0),
+
+                        TextInput::make('numero_factura')
+                            ->label('No. de Factura'),
                     ])->columns(3),
             ]);
     }
@@ -159,8 +168,12 @@ class ActivoResource extends Resource
                     ->label('Categoría')
                     ->sortable(),
 
-                TextColumn::make('marca.nombre') // Agregado a la tabla para ver la marca
+                TextColumn::make('marcaInfo.nombre')
                     ->label('Marca'),
+
+                TextColumn::make('numero_factura')
+                    ->label('No. Factura')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('costo_original')
                     ->label('Costo')
@@ -172,11 +185,14 @@ class ActivoResource extends Resource
                     ->date('d/m/Y')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('asignaciones.empleado.nombre_completo')
+                Tables\Columns\IconColumn::make('no_suma_inventario')
+                    ->label('No Suma Inv.')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('asignacionActiva.empleado.nombre_completo')
                     ->label('Responsable Actual')
-                    ->placeholder('En Bodega')
-                    ->listWithLineBreaks()
-                    ->limitList(1),
+                    ->placeholder('En Bodega'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('categoria')
@@ -211,6 +227,11 @@ class ActivoResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Finalizar vida útil del bien')
                     ->form([
+                        DatePicker::make('fecha_baja')
+                            ->label('Fecha de Baja')
+                            ->default(now())
+                            ->required(),
+
                         Forms\Components\Textarea::make('motivo_baja')
                             ->label('Motivo de la baja')
                             ->required(),
@@ -218,11 +239,12 @@ class ActivoResource extends Resource
                     ->action(function (Activo $record, array $data): void {
                         $record->update([
                             'es_baja' => true,
-                            'descripcion' => $record->descripcion . " (DE BAJA: " . $data['motivo_baja'] . ")",
+                            'fecha_baja' => $data['fecha_baja'],
+                            'motivo_baja' => $data['motivo_baja'],
                         ]);
                     })
                     ->visible(fn (Activo $record): bool => !$record->es_baja),
-                   
+
                 Tables\Actions\Action::make('reactivar')
                     ->label('Reactivar Bien')
                     ->icon('heroicon-o-arrow-path')
@@ -231,9 +253,11 @@ class ActivoResource extends Resource
                     ->action(function (Activo $record): void {
                         $record->update([
                             'es_baja' => false,
+                            'fecha_baja' => null,
+                            'motivo_baja' => null,
                         ]);
                     })
-                    ->visible(fn (Activo $record): bool => $record->es_baja), 
+                    ->visible(fn (Activo $record): bool => $record->es_baja),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

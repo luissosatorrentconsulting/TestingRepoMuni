@@ -53,7 +53,7 @@ class AsignacionesRelationManager extends RelationManager
                 ->falseLabel('Incluir Bajas')
                 ->queries(
                     true: fn ($query) => $query->whereHas('activo', fn($q) => $q->where('es_baja', false)),
-                    false: fn ($query) => $query->all(),
+                    false: fn ($query) => $query,
                 ),
         ]);
 }
