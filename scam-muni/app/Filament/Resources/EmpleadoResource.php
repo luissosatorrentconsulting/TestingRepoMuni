@@ -75,19 +75,29 @@ class EmpleadoResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 
-                // BOTÓN ACTUALIZADO PARA VISOR DE IMPRESIÓN
                 Tables\Actions\Action::make('imprimirResguardo')
                     ->label('Imprimir Resguardo')
                     ->icon('heroicon-o-document-text')
                     ->color('success')
-                    ->url(fn (Empleado $record): string => route('empleado.resguardo.pdf', $record))
-                    ->openUrlInNewTab(),
-                    Tables\Actions\Action::make('imprimirTraslados')
-        ->label('Historial Traslados')
-        ->icon('heroicon-o-arrows-right-left')
-        ->color('info')
-        ->url(fn (Empleado $record): string => route('empleado.traslados.pdf', $record))
-        ->openUrlInNewTab(),
+                    ->modalHeading('Resguardo de Empleado')
+                    ->modalContent(fn (Empleado $record) => view('filament.modals.pdf-viewer', [
+                        'url' => route('empleado.resguardo.pdf', $record),
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar')
+                    ->modalWidth('7xl'),
+
+                Tables\Actions\Action::make('imprimirTraslados')
+                    ->label('Historial Traslados')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->color('info')
+                    ->modalHeading('Historial de Traslados')
+                    ->modalContent(fn (Empleado $record) => view('filament.modals.pdf-viewer', [
+                        'url' => route('empleado.traslados.pdf', $record),
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar')
+                    ->modalWidth('7xl'),
                     
             ]);
     }

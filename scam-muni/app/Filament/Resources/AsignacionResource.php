@@ -133,8 +133,13 @@ class AsignacionResource extends Resource
         ->label('Imprimir Acta')
         ->icon('heroicon-o-printer')
         ->color('info')
-        ->url(fn (Asignacion $record): string => route('asignacion.acta.pdf', $record))
-        ->openUrlInNewTab(),
+        ->modalHeading('Acta de Asignación')
+        ->modalContent(fn (Asignacion $record) => view('filament.modals.pdf-viewer', [
+            'url' => route('asignacion.acta.pdf', $record),
+        ]))
+        ->modalSubmitAction(false)
+        ->modalCancelActionLabel('Cerrar')
+        ->modalWidth('7xl'),
         
 ])
             ->bulkActions([

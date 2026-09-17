@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\ActivoResource\Pages\ListActivos;
 use App\Filament\Resources\AsignacionResource\Pages\ListAsignacions;
+use App\Filament\Resources\EmpleadoResource\Pages\ListEmpleados;
 use App\Models\Activo;
 use App\Models\Asignacion;
 use App\Models\Categoria;
@@ -84,5 +85,50 @@ class ActionsSmokeTest extends TestCase
         $this->assertTrue($activo->es_baja);
         $this->assertNotNull($activo->fecha_baja);
         $this->assertEquals('Ya no sirve', $activo->motivo_baja);
+    }
+
+    public function test_pdf_viewer_modals_render_without_errors(): void
+    {
+        Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
+        $empleado = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '123', 'activo' => true]);
+        $activo = Activo::create([
+            'categoria_id' => $categoria->id,
+            'descripcion' => 'Laptop',
+            'estado' => 'BUENO',
+            'costo_original' => 1000,
+            'fecha_compra' => now(),
+            'valor_desecho' => 0,
+        ]);
+        $asignacion = Asignacion::create([
+            'activo_id' => $activo->id,
+            'empleado_id' => $empleado->id,
+            'fecha_asignacion' => now(),
+            'documento_respaldo' => 'ACTA-1',
+            'observaciones' => 'Entrega',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ListActivos::class)
+            ->mountTableAction('historial', $activo)
+            ->assertHasNoTableActionErrors()
+            ->assertSee(route('activos.historial.pdf', $activo), escape: false);
+
+        Livewire::test(ListEmpleados::class)
+            ->mountTableAction('imprimirResguardo', $empleado)
+            ->assertHasNoTableActionErrors()
+            ->assertSee(route('empleado.resguardo.pdf', $empleado), escape: false);
+
+        Livewire::test(ListEmpleados::class)
+            ->mountTableAction('imprimirTraslados', $empleado)
+            ->assertHasNoTableActionErrors()
+            ->assertSee(route('empleado.traslados.pdf', $empleado), escape: false);
+
+        Livewire::test(ListAsignacions::class)
+            ->mountTableAction('pdf', $asignacion)
+            ->assertHasNoTableActionErrors()
+            ->assertSee(route('asignacion.acta.pdf', $asignacion), escape: false);
     }
 }

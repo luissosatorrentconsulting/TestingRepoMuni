@@ -221,8 +221,13 @@ class ActivoResource extends Resource
                     ->label('Historial')
                     ->icon('heroicon-o-clock')
                     ->color('info')
-                    ->url(fn (Activo $record): string => route('activos.historial.pdf', $record))
-                    ->openUrlInNewTab(),
+                    ->modalHeading('Historial del Activo')
+                    ->modalContent(fn (Activo $record) => view('filament.modals.pdf-viewer', [
+                        'url' => route('activos.historial.pdf', $record),
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar')
+                    ->modalWidth('7xl'),
                 
                 Tables\Actions\Action::make('baja')
                     ->label('Dar de Baja')

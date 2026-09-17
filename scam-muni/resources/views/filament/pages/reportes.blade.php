@@ -1,99 +1,148 @@
 <x-filament-panels::page>
-    <form wire:submit.prevent>
-        {{ $this->form }}
-    </form>
+    <div x-data="{ pdfUrl: null, pdfLabel: null }">
 
-    <div class="grid gap-6 mt-6">
+        <form wire:submit.prevent>
+            {{ $this->form }}
+        </form>
 
-        <x-filament::section>
-            <x-slot name="heading">Reportes por Empleado</x-slot>
+        <div class="grid gap-6 mt-6">
 
-            @php $reportes = $this->getReportesEmpleado(); @endphp
+            <x-filament::section>
+                <x-slot name="heading">Reportes por Empleado</x-slot>
 
-            @if (empty($reportes))
-                <p class="text-sm text-gray-500 dark:text-gray-400">Elegí un empleado arriba para ver sus reportes disponibles.</p>
-            @else
+                @php $reportes = $this->getReportesEmpleado(); @endphp
+
+                @if (empty($reportes))
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Elegí un empleado arriba para ver sus reportes disponibles.</p>
+                @else
+                    <div class="flex flex-wrap gap-3">
+                        @foreach ($reportes as $reporte)
+                            <x-filament::button
+                                type="button"
+                                icon="heroicon-o-eye"
+                                color="info"
+                                x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                            >
+                                {{ $reporte['label'] }}
+                            </x-filament::button>
+                        @endforeach
+                    </div>
+                @endif
+            </x-filament::section>
+
+            <x-filament::section>
+                <x-slot name="heading">Reportes por Activo</x-slot>
+
+                @php $reportes = $this->getReportesActivo(); @endphp
+
+                @if (empty($reportes))
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Elegí un activo arriba para ver sus reportes disponibles.</p>
+                @else
+                    <div class="flex flex-wrap gap-3">
+                        @foreach ($reportes as $reporte)
+                            <x-filament::button
+                                type="button"
+                                icon="heroicon-o-eye"
+                                color="info"
+                                x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                            >
+                                {{ $reporte['label'] }}
+                            </x-filament::button>
+                        @endforeach
+                    </div>
+                @endif
+            </x-filament::section>
+
+            <x-filament::section>
+                <x-slot name="heading">Reportes por Asignación</x-slot>
+
+                @php $reportes = $this->getReportesAsignacion(); @endphp
+
+                @if (empty($reportes))
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Elegí una asignación arriba para ver sus reportes disponibles.</p>
+                @else
+                    <div class="flex flex-wrap gap-3">
+                        @foreach ($reportes as $reporte)
+                            <x-filament::button
+                                type="button"
+                                icon="heroicon-o-eye"
+                                color="info"
+                                x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                            >
+                                {{ $reporte['label'] }}
+                            </x-filament::button>
+                        @endforeach
+                    </div>
+                @endif
+            </x-filament::section>
+
+            <x-filament::section>
+                <x-slot name="heading">Reportes Generales</x-slot>
+
                 <div class="flex flex-wrap gap-3">
-                    @foreach ($reportes as $reporte)
+                    @foreach ($this->getReportesGenerales() as $reporte)
                         <x-filament::button
-                            tag="a"
-                            :href="route($reporte['route'], $reporte['params'])"
-                            target="_blank"
-                            icon="heroicon-o-document-arrow-down"
-                            color="info"
+                            type="button"
+                            icon="heroicon-o-eye"
+                            color="success"
+                            x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
                         >
                             {{ $reporte['label'] }}
                         </x-filament::button>
                     @endforeach
                 </div>
-            @endif
-        </x-filament::section>
+            </x-filament::section>
 
-        <x-filament::section>
-            <x-slot name="heading">Reportes por Activo</x-slot>
+        </div>
 
-            @php $reportes = $this->getReportesActivo(); @endphp
+        {{-- Visor de reportes: en vez de abrir el PDF directo, se muestra acá dentro --}}
+        <div
+            x-show="pdfUrl"
+            x-cloak
+            style="position: fixed; inset: 0; z-index: 50;"
+            class="flex items-center justify-center p-4"
+        >
+            <div
+                x-on:click="pdfUrl = null"
+                style="position: absolute; inset: 0; background: rgba(0,0,0,0.6);"
+            ></div>
 
-            @if (empty($reportes))
-                <p class="text-sm text-gray-500 dark:text-gray-400">Elegí un activo arriba para ver sus reportes disponibles.</p>
-            @else
-                <div class="flex flex-wrap gap-3">
-                    @foreach ($reportes as $reporte)
-                        <x-filament::button
-                            tag="a"
-                            :href="route($reporte['route'], $reporte['params'])"
+            <div
+                class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full"
+                style="max-width: 1100px;"
+            >
+                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-base font-semibold text-gray-950 dark:text-white" x-text="pdfLabel"></h3>
+
+                    <div class="flex items-center gap-4">
+                        <a
+                            :href="pdfUrl"
                             target="_blank"
-                            icon="heroicon-o-document-arrow-down"
-                            color="info"
+                            class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
                         >
-                            {{ $reporte['label'] }}
-                        </x-filament::button>
-                    @endforeach
-                </div>
-            @endif
-        </x-filament::section>
+                            Abrir en pestaña nueva ↗
+                        </a>
 
-        <x-filament::section>
-            <x-slot name="heading">Reportes por Asignación</x-slot>
-
-            @php $reportes = $this->getReportesAsignacion(); @endphp
-
-            @if (empty($reportes))
-                <p class="text-sm text-gray-500 dark:text-gray-400">Elegí una asignación arriba para ver sus reportes disponibles.</p>
-            @else
-                <div class="flex flex-wrap gap-3">
-                    @foreach ($reportes as $reporte)
-                        <x-filament::button
-                            tag="a"
-                            :href="route($reporte['route'], $reporte['params'])"
-                            target="_blank"
-                            icon="heroicon-o-document-arrow-down"
-                            color="info"
+                        <button
+                            type="button"
+                            x-on:click="pdfUrl = null"
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                         >
-                            {{ $reporte['label'] }}
-                        </x-filament::button>
-                    @endforeach
+                            <span class="sr-only">Cerrar</span>
+                            ✕
+                        </button>
+                    </div>
                 </div>
-            @endif
-        </x-filament::section>
 
-        <x-filament::section>
-            <x-slot name="heading">Reportes Generales</x-slot>
-
-            <div class="flex flex-wrap gap-3">
-                @foreach ($this->getReportesGenerales() as $reporte)
-                    <x-filament::button
-                        tag="a"
-                        :href="route($reporte['route'], $reporte['params'])"
-                        target="_blank"
-                        icon="heroicon-o-document-arrow-down"
-                        color="success"
-                    >
-                        {{ $reporte['label'] }}
-                    </x-filament::button>
-                @endforeach
+                <div class="p-4">
+                    <iframe
+                        :src="pdfUrl"
+                        style="width: 100%; height: 75vh; border: 0; border-radius: 0.5rem;"
+                        class="bg-white"
+                    ></iframe>
+                </div>
             </div>
-        </x-filament::section>
+        </div>
 
     </div>
 </x-filament-panels::page>
