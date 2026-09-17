@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\Activo;
+use App\Models\Asignacion;
 use App\Models\Municipalidad;
 use App\Models\Empleado;
 use Illuminate\Support\Facades\Hash;
@@ -108,6 +109,35 @@ Route::middleware('auth')->group(function () {
 
         return $pdf->stream("Traslados-{$empleado->nombre_completo}.pdf");
     })->name('empleado.traslados.pdf');
+
+    // Acta de Asignación (antes era una descarga sin ruta propia; se le da
+    // nombre para poder enlazarla igual que los demás reportes)
+    Route::get('/asignacion/{asignacion}/acta-pdf', function (Asignacion $asignacion) {
+        $muni = Municipalidad::find(config('app.muni_id', 1));
+
+        $pdf = Pdf::loadView('pdf.acta_asignacion', [
+            'asignacion' => $asignacion,
+            'muni' => $muni,
+        ]);
+
+        return $pdf->stream("Acta-{$asignacion->id}.pdf");
+    })->name('asignacion.acta.pdf');
+
+    // Reporte General de Inventario, sin depender de los filtros de la tabla
+    // (la acción "Reporte de Inventario" dentro de Activos sigue existiendo
+    // tal cual y respeta lo que esté filtrado ahí; esta ruta es la versión
+    // "todo el inventario" para usar desde la Central de Reportes).
+    Route::get('/reportes/inventario-general-pdf', function () {
+        $muni = Municipalidad::find(config('app.muni_id', 1));
+        $activos = Activo::where('es_baja', false)->get();
+
+        $pdf = Pdf::loadView('pdf.inventario_general', [
+            'activos' => $activos,
+            'muni' => $muni,
+        ]);
+
+        return $pdf->stream('Inventario-' . now()->format('d-m-Y') . '.pdf');
+    })->name('reportes.inventario-general.pdf');
 
 
     // --- RUTAS DE MANTENIMIENTO INCREMENTAL (asumen que la app ya funciona) ---
