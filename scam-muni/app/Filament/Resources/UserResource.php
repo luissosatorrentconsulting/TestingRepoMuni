@@ -9,6 +9,7 @@ use Filament\Forms\Form; // <--- FALTA ESTA
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table; // <--- FALTA ESTA
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash; // <--- NECESARIA PARA LA CONTRASEÑA
 
 class UserResource extends Resource
@@ -23,7 +24,18 @@ class UserResource extends Resource
     {
         // Una vez que verifiques que aparece, cambia esto a:
         return auth()->user()?->rol === 'admin';
-       
+
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // Un admin de municipalidad solo ve (y puede tocar) los usuarios de
+        // SU municipalidad. El Super Admin ve los usuarios de la
+        // municipalidad que tenga activa (o a otros Super Admin, si todavía
+        // no eligió ninguna).
+        return $query->where('municipalidad_id', config('app.muni_id'));
     }
 
     public static function form(Form $form): Form
@@ -48,6 +60,13 @@ class UserResource extends Resource
                             ])
                             ->required()
                             ->native(false),
+                        Forms\Components\Select::make('municipalidad_id')
+                            ->label('Municipalidad')
+                            ->relationship('municipalidad', 'nombre')
+                            ->placeholder('— Super Admin (todas las municipalidades) —')
+                            ->helperText('Dejalo vacío para crear un Super Admin que puede operar en cualquier municipalidad.')
+                            ->visible(fn (): bool => auth()->user()?->isSuperAdmin() ?? false)
+                            ->searchable(),
                         Forms\Components\TextInput::make('password')
                             ->label('Contraseña')
                             ->password()

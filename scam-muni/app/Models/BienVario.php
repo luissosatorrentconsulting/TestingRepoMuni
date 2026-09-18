@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class BienVario extends Model
 {
@@ -10,8 +11,21 @@ class BienVario extends Model
     protected $fillable = [
         'codigo_qr', 'descripcion', 'marca', 'marca_id', 'costo',
         'fecha_compra', 'numero_factura', 'numero_inventario', 'no_suma_inventario',
-        'estado', 'fecha_baja', 'categoria_id', 'proveedor_id', 'oficina_id'
+        'estado', 'fecha_baja', 'categoria_id', 'proveedor_id', 'oficina_id', 'municipalidad_id'
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('muni', function (Builder $builder) {
+            $builder->where('municipalidad_id', config('app.muni_id', 1));
+        });
+
+        static::creating(function ($bien) {
+            if (!$bien->municipalidad_id) {
+                $bien->municipalidad_id = config('app.muni_id', 1);
+            }
+        });
+    }
 
     protected $casts = [
         'no_suma_inventario' => 'boolean',

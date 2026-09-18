@@ -31,7 +31,7 @@ class NuevosReportesTest extends TestCase
     public function test_los_5_reportes_nuevos_generan_pdf_sin_error(): void
     {
         Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
-        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin', 'municipalidad_id' => 1]);
         $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
         $proveedor = Proveedor::create(['nombre' => 'Proveedor Uno', 'nit' => '123456-7', 'municipalidad_id' => 1]);
 

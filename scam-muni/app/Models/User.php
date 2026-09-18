@@ -16,7 +16,8 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
-        'rol', 
+        'rol',
+        'municipalidad_id',
     ];
 
     protected $hidden = [
@@ -35,6 +36,18 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         // Controlamos el acceso real según el rol que tengan guardado
-        return $this->rol === 'admin' || $this->rol === 'operador'; 
+        return $this->rol === 'admin' || $this->rol === 'operador';
+    }
+
+    public function municipalidad()
+    {
+        return $this->belongsTo(Municipalidad::class);
+    }
+
+    // Un Super Admin no pertenece a ninguna municipalidad fija: puede elegir
+    // con cuál trabajar desde "Cambiar Municipalidad".
+    public function isSuperAdmin(): bool
+    {
+        return is_null($this->municipalidad_id);
     }
 }

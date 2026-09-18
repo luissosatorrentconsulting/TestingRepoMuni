@@ -12,6 +12,7 @@ use Filament\Tables\Table;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Database\Eloquent\Builder;
 
 class MunicipalidadResource extends Resource
 {
@@ -73,4 +74,28 @@ FileUpload::make('logo')
     // Solo el administrador tiene permiso para ver este recurso
     return auth()->user()?->rol === 'admin';
 }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // Un admin normal solo ve/edita los datos de SU municipalidad (nunca
+        // la lista completa de clientes). El Super Admin sí ve todas.
+        if (!auth()->user()?->isSuperAdmin()) {
+            $query->where('id', config('app.muni_id'));
+        }
+
+        return $query;
+    }
+
+    // Solo el Super Admin da de alta municipalidades nuevas (clientes nuevos).
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
 }

@@ -463,6 +463,77 @@ Route::middleware('auth')->group(function () {
             ], 500);
         }
     });
+
+    // RUTA DE MANTENIMIENTO: Fase 3 — multi-tenancy real (varias
+    // municipalidades en el mismo servidor).
+    Route::get('/fix-db-fase3', function () {
+        $reporte = [];
+
+        Schema::table('users', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('users', 'municipalidad_id')) {
+                $table->unsignedBigInteger('municipalidad_id')->nullable()->after('id');
+                $reporte[] = "✅ Columna 'municipalidad_id' agregada a users (null = Super Admin).";
+            }
+        });
+
+        foreach (['categorias', 'bienes_varios', 'gestiones_autoridades', 'ubicaciones', 'movimientos_activos'] as $tabla) {
+            if (!Schema::hasTable($tabla)) {
+                continue;
+            }
+            Schema::table($tabla, function (Blueprint $table) use ($tabla, &$reporte) {
+                if (!Schema::hasColumn($tabla, 'municipalidad_id')) {
+                    $table->unsignedBigInteger('municipalidad_id')->nullable()->after('id');
+                    $reporte[] = "✅ Columna 'municipalidad_id' agregada a {$tabla} (antes era compartida entre todas las municipalidades).";
+                }
+            });
+        }
+
+        // OJO: no asumimos que la municipalidad existente tiene id=1 — en
+        // algunos entornos se creó con env('MUNICIPALIDAD_DEFAULT_ID'), que
+        // puede ser distinto. Se detecta de la fuente real en vez de adivinar.
+        $municipalidadExistente = DB::table('municipalidades')->orderBy('id')->value('id')
+            ?? DB::table('activos')->whereNotNull('municipalidad_id')->orderBy('municipalidad_id')->value('municipalidad_id')
+            ?? DB::table('empleados')->whereNotNull('municipalidad_id')->orderBy('municipalidad_id')->value('municipalidad_id')
+            ?? 1;
+        $reporte[] = "ℹ️ Municipalidad existente detectada: id={$municipalidadExistente}.";
+
+        foreach (['categorias', 'bienes_varios', 'gestiones_autoridades', 'ubicaciones', 'movimientos_activos', 'users'] as $tabla) {
+            if (Schema::hasTable($tabla) && Schema::hasColumn($tabla, 'municipalidad_id')) {
+                $actualizados = DB::table($tabla)->whereNull('municipalidad_id')->update(['municipalidad_id' => $municipalidadExistente]);
+                if ($actualizados > 0) {
+                    $reporte[] = "✅ {$actualizados} registro(s) de '{$tabla}' asignados a la municipalidad {$municipalidadExistente} (la única que existía).";
+                }
+            }
+        }
+
+        try {
+            Artisan::call('filament:optimize-clear');
+            $reporte[] = "⚡ Caché de Filament limpiada.";
+        } catch (\Exception $e) {
+            $reporte[] = "⚠️ Error en caché: " . $e->getMessage();
+        }
+
+        return count($reporte) > 0 ? implode("<br>", $reporte) : "La base de datos ya está al día (fase 3).";
+    });
+
+    // Crea (o actualiza) tu cuenta de Super Admin: puede elegir con qué
+    // municipalidad trabajar desde "Cambiar Municipalidad" en vez de estar
+    // atada a una sola. Correlo una sola vez; después cambiá la contraseña.
+    Route::get('/crear-super-admin', function () {
+        $passwordTemporal = str()->random(16);
+
+        $user = User::updateOrCreate(
+            ['email' => 'superadmin@sistema.com'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make($passwordTemporal),
+                'rol' => 'admin',
+                'municipalidad_id' => null,
+            ]
+        );
+
+        return "Super Admin listo. Correo: {$user->email} — Contraseña temporal: {$passwordTemporal} (cambiala después de entrar).";
+    });
 });
 
 // --- RUTAS "ROMPER VIDRIO" (requieren ?token=MAINTENANCE_TOKEN, no login) ---

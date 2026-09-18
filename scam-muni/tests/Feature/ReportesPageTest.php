@@ -26,7 +26,7 @@ class ReportesPageTest extends TestCase
     public function test_reportes_page_shows_the_right_links_once_a_record_is_selected(): void
     {
         Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
-        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin', 'municipalidad_id' => 1]);
         $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
         $empleado = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '123', 'activo' => true]);
         $activo = Activo::create([
@@ -86,7 +86,7 @@ class ReportesPageTest extends TestCase
         // no se compilaba y quedaba como texto literal "@js(...)" en el HTML,
         // lo que rompía el click (JS inválido) sin dar ningún error visible.
         Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
-        $user = User::create(['name' => 'Admin', 'email' => 'admin2@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin2@test.com', 'password' => bcrypt('x'), 'rol' => 'admin', 'municipalidad_id' => 1]);
         $empleado = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '999', 'activo' => true]);
 
         $this->actingAs($user);

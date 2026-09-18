@@ -31,7 +31,7 @@ class ActionsSmokeTest extends TestCase
     public function test_reasignar_and_baja_actions_work(): void
     {
         Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
-        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin', 'municipalidad_id' => 1]);
         $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
         $marca = Marca::create(['nombre' => 'HP', 'municipalidad_id' => 1]);
         $color = Color::create(['nombre' => 'Negro', 'municipalidad_id' => 1]);
@@ -90,7 +90,7 @@ class ActionsSmokeTest extends TestCase
     public function test_pdf_viewer_modals_render_without_errors(): void
     {
         Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
-        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin', 'municipalidad_id' => 1]);
         $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
         $empleado = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '123', 'activo' => true]);
         $activo = Activo::create([

@@ -35,6 +35,7 @@ class SmokeTest extends TestCase
             'email' => 'admin@test.com',
             'password' => bcrypt('password'),
             'rol' => 'admin',
+            'municipalidad_id' => 1,
         ]);
         $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
         $marca = Marca::create(['nombre' => 'HP', 'municipalidad_id' => 1]);
