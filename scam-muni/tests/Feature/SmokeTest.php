@@ -69,6 +69,7 @@ class SmokeTest extends TestCase
         $this->actingAs($user);
 
         $urls = [
+            '/admin', // Dashboard: renderiza los widgets (ActivosPorCategoriaChart, etc.)
             '/admin/activos',
             '/admin/activos/create',
             "/admin/activos/{$activo->id}/edit",

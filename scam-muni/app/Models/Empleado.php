@@ -28,7 +28,7 @@ class Empleado extends Model
 
         // Solo ver empleados de MI municipalidad
         static::addGlobalScope('muni', function (Builder $builder) {
-            $builder->where('municipalidad_id', config('app.muni_id', 1));
+            $builder->where('empleados.municipalidad_id', config('app.muni_id', 1));
         });
 
         // Al crear un empleado, asignarle MI municipalidad automáticamente

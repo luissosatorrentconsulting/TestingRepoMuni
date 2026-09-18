@@ -12,7 +12,7 @@ class GestionAutoridad extends Model
     protected static function booted()
     {
         static::addGlobalScope('muni', function (Builder $builder) {
-            $builder->where('municipalidad_id', config('app.muni_id', 1));
+            $builder->where('gestiones_autoridades.municipalidad_id', config('app.muni_id', 1));
         });
 
         static::creating(function ($gestion) {

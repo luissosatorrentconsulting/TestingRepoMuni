@@ -24,7 +24,7 @@ class Asignacion extends Model
         // Solo ver asignaciones de activos que pertenecen a mi muni
         static::addGlobalScope('muni', function (Builder $builder) {
             $builder->whereHas('activo', function ($query) {
-                $query->where('municipalidad_id', config('app.muni_id', 1));
+                $query->where('activos.municipalidad_id', config('app.muni_id', 1));
             });
         });
     }

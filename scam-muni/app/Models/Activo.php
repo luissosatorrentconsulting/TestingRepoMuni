@@ -32,7 +32,10 @@ class Activo extends Model
     {
         // 1. Filtro Global: Laravel solo traerá los de la muni configurada.
         static::addGlobalScope('muni', function (Builder $builder) {
-            $builder->where('municipalidad_id', config('app.muni_id', 1));
+            // Calificado con el nombre de tabla: si no, cualquier reporte que
+            // haga JOIN con otra tabla que también tenga 'municipalidad_id'
+            // (como categorias) rompe con "Column ... is ambiguous" en MySQL.
+            $builder->where('activos.municipalidad_id', config('app.muni_id', 1));
         });
 
         // 2. Asignación automática: Al crear, le ponemos la muni sin preguntar.

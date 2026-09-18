@@ -26,7 +26,7 @@ class Departamento extends Model
     protected static function booted()
     {
         static::addGlobalScope('municipalidad', function (Builder $builder) {
-            $builder->where('municipalidad_id', config('app.muni_id', 1));
+            $builder->where('departamentos.municipalidad_id', config('app.muni_id', 1));
         });
     }
 }

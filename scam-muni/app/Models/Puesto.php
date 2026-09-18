@@ -31,7 +31,7 @@ class Puesto extends Model
     {
         static::addGlobalScope('municipalidad', function (Builder $builder) {
             $builder->whereHas('oficina.departamento', function ($query) {
-                $query->where('municipalidad_id', config('app.muni_id', 1));
+                $query->where('departamentos.municipalidad_id', config('app.muni_id', 1));
             });
         });
     }

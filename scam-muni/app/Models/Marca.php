@@ -22,7 +22,7 @@ class Marca extends Model
     protected static function booted()
     {
         static::addGlobalScope('muni', function (\Illuminate\Database\Eloquent\Builder $builder) {
-            $builder->where('municipalidad_id', config('app.muni_id', 1));
+            $builder->where('marcas.municipalidad_id', config('app.muni_id', 1));
         });
 
         static::creating(function ($model) {
