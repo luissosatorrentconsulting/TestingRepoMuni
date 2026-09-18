@@ -79,4 +79,27 @@ class ReportesPageTest extends TestCase
         $this->get(route('asignacion.acta.pdf', $asignacion))->assertOk();
         $this->get(route('reportes.inventario-general.pdf'))->assertOk();
     }
+
+    public function test_report_buttons_render_valid_javascript_not_a_raw_blade_directive(): void
+    {
+        // Regresión: @js(...) dentro de un atributo de <x-filament::button ...>
+        // no se compilaba y quedaba como texto literal "@js(...)" en el HTML,
+        // lo que rompía el click (JS inválido) sin dar ningún error visible.
+        Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin2@test.com', 'password' => bcrypt('x'), 'rol' => 'admin']);
+        $empleado = Empleado::create(['nombre_completo' => 'Juan Perez', 'dpi' => '999', 'activo' => true]);
+
+        $this->actingAs($user);
+
+        $component = Livewire::test(Reportes::class);
+        $component->set('data.empleado_id', $empleado->id);
+
+        $html = $component->html();
+
+        $this->assertStringNotContainsString('@js(', $html);
+        $this->assertStringContainsString(
+            "pdfUrl = '" . addcslashes(route('empleado.resguardo.pdf', $empleado), '/') . "'",
+            $html,
+        );
+    }
 }

@@ -21,7 +21,7 @@
                                 type="button"
                                 icon="heroicon-o-eye"
                                 color="info"
-                                x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                                x-on:click="pdfUrl = {{ \Illuminate\Support\Js::from(route($reporte['route'], $reporte['params'])) }}; pdfLabel = {{ \Illuminate\Support\Js::from($reporte['label']) }}"
                             >
                                 {{ $reporte['label'] }}
                             </x-filament::button>
@@ -44,7 +44,7 @@
                                 type="button"
                                 icon="heroicon-o-eye"
                                 color="info"
-                                x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                                x-on:click="pdfUrl = {{ \Illuminate\Support\Js::from(route($reporte['route'], $reporte['params'])) }}; pdfLabel = {{ \Illuminate\Support\Js::from($reporte['label']) }}"
                             >
                                 {{ $reporte['label'] }}
                             </x-filament::button>
@@ -67,7 +67,7 @@
                                 type="button"
                                 icon="heroicon-o-eye"
                                 color="info"
-                                x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                                x-on:click="pdfUrl = {{ \Illuminate\Support\Js::from(route($reporte['route'], $reporte['params'])) }}; pdfLabel = {{ \Illuminate\Support\Js::from($reporte['label']) }}"
                             >
                                 {{ $reporte['label'] }}
                             </x-filament::button>
@@ -85,7 +85,7 @@
                         type="button"
                         icon="heroicon-o-eye"
                         color="danger"
-                        x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                        x-on:click="pdfUrl = {{ \Illuminate\Support\Js::from(route($reporte['route'], $reporte['params'])) }}; pdfLabel = {{ \Illuminate\Support\Js::from($reporte['label']) }}"
                     >
                         Ver Bajas del Período
                     </x-filament::button>
@@ -101,7 +101,7 @@
                             type="button"
                             icon="heroicon-o-eye"
                             color="success"
-                            x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                            x-on:click="pdfUrl = {{ \Illuminate\Support\Js::from(route($reporte['route'], $reporte['params'])) }}; pdfLabel = {{ \Illuminate\Support\Js::from($reporte['label']) }}"
                         >
                             {{ $reporte['label'] }}
                         </x-filament::button>
