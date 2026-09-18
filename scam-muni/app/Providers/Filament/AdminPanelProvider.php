@@ -30,6 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName('MuniSys')
             ->colors([
                 'primary' => Color::Amber,
             ])
