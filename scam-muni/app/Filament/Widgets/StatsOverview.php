@@ -8,6 +8,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverview extends BaseWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getStats(): array
     {
         return [
@@ -20,6 +22,11 @@ class StatsOverview extends BaseWidget
                 ->description('Costo acumulado del patrimonio')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('primary'),
+
+            Stat::make('Disponibles en Bodega', Activo::disponibles()->count())
+                ->description('Sin asignar a ningún empleado')
+                ->descriptionIcon('heroicon-m-building-storefront')
+                ->color('warning'),
 
             Stat::make('Bienes de Baja', Activo::where('es_baja', true)->count())
                 ->description('Activos fuera de servicio')

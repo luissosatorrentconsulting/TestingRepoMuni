@@ -12,6 +12,7 @@ class ActivosTendenciaChart extends ChartWidget
 {
     protected static ?string $heading = 'Registros de Activos (Últimos 6 meses)';
     protected int | string | array $columnSpan = 1;
+    protected static ?int $sort = 3;
 
     protected function getData(): array
 {

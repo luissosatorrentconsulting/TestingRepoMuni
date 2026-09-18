@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB; // <--- VITAL PARA QUE NO DE ERROR
 class ActivosPorCategoriaChart extends ChartWidget
 {
     protected static ?string $heading = 'Activos por Categoría';
+    protected static ?int $sort = 2;
 
     // Esto lo pone a la par del de tendencia (mitad de pantalla)
     protected int | string | array $columnSpan = 1;
