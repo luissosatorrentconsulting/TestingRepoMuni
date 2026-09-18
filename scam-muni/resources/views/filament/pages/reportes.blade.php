@@ -77,6 +77,22 @@
             </x-filament::section>
 
             <x-filament::section>
+                <x-slot name="heading">Bajas del Período</x-slot>
+
+                @php $reporte = $this->getReporteBajas(); @endphp
+                <div class="flex flex-wrap gap-3">
+                    <x-filament::button
+                        type="button"
+                        icon="heroicon-o-eye"
+                        color="danger"
+                        x-on:click="pdfUrl = @js(route($reporte['route'], $reporte['params'])); pdfLabel = @js($reporte['label'])"
+                    >
+                        Ver Bajas del Período
+                    </x-filament::button>
+                </div>
+            </x-filament::section>
+
+            <x-filament::section>
                 <x-slot name="heading">Reportes Generales</x-slot>
 
                 <div class="flex flex-wrap gap-3">

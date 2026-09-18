@@ -21,6 +21,16 @@ protected static function booted()
         $model->municipalidad_id = env('MUNICIPALIDAD_DEFAULT_ID', 1);
     });
 }
+
+public function activos()
+{
+    return $this->hasMany(Activo::class);
+}
+
+public function bienesVarios()
+{
+    return $this->hasMany(BienVario::class);
+}
 }
 
 

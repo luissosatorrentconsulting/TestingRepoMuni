@@ -3,6 +3,8 @@
 use App\Models\User;
 use App\Models\Activo;
 use App\Models\Asignacion;
+use App\Models\BienVario;
+use App\Models\Proveedor;
 use App\Models\Municipalidad;
 use App\Models\Empleado;
 use Illuminate\Support\Facades\Hash;
@@ -138,6 +140,99 @@ Route::middleware('auth')->group(function () {
 
         return $pdf->stream('Inventario-' . now()->format('d-m-Y') . '.pdf');
     })->name('reportes.inventario-general.pdf');
+
+    // Inventario agrupado por Oficina (y Departamento), como se hace una toma
+    // física real: bien por bien, oficina por oficina. Lo que no tiene
+    // asignación vigente cae en "Bodega / Sin Asignar".
+    Route::get('/reportes/inventario-por-oficina-pdf', function () {
+        $muni = Municipalidad::find(config('app.muni_id', 1));
+
+        $activos = Activo::where('es_baja', false)
+            ->with(['categoria', 'asignacionActiva.empleado.puesto_oficial.oficina.departamento'])
+            ->get();
+
+        $grupos = $activos
+            ->groupBy(fn (Activo $activo) => $activo->asignacionActiva?->empleado?->puesto_oficial?->oficina?->nombre ?? 'Bodega / Sin Asignar')
+            ->sortKeys();
+
+        $pdf = Pdf::loadView('pdf.inventario_por_oficina', [
+            'muni' => $muni,
+            'grupos' => $grupos,
+        ])->setPaper('letter', 'landscape');
+
+        return $pdf->stream('Inventario-por-Oficina-' . now()->format('d-m-Y') . '.pdf');
+    })->name('reportes.inventario-por-oficina.pdf');
+
+    // Bajas del período: acepta ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD (ambos
+    // opcionales; sin ninguno, trae el histórico completo de bajas).
+    Route::get('/reportes/bajas-pdf', function (\Illuminate\Http\Request $request) {
+        $muni = Municipalidad::find(config('app.muni_id', 1));
+        $desde = $request->query('desde');
+        $hasta = $request->query('hasta');
+
+        $activos = Activo::where('es_baja', true)
+            ->when($desde, fn ($q) => $q->whereDate('fecha_baja', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('fecha_baja', '<=', $hasta))
+            ->with('categoria')
+            ->orderBy('fecha_baja')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.bajas_periodo', [
+            'muni' => $muni,
+            'activos' => $activos,
+            'desde' => $desde,
+            'hasta' => $hasta,
+        ]);
+
+        return $pdf->stream('Bajas-' . now()->format('d-m-Y') . '.pdf');
+    })->name('reportes.bajas.pdf');
+
+    // Activos disponibles en bodega: no de baja y sin asignación vigente.
+    Route::get('/reportes/disponibles-pdf', function () {
+        $muni = Municipalidad::find(config('app.muni_id', 1));
+        $activos = Activo::disponibles()->with('categoria')->get();
+
+        $pdf = Pdf::loadView('pdf.disponibles_bodega', [
+            'muni' => $muni,
+            'activos' => $activos,
+        ]);
+
+        return $pdf->stream('Disponibles-Bodega-' . now()->format('d-m-Y') . '.pdf');
+    })->name('reportes.disponibles.pdf');
+
+    // Reporte General de Bienes Varios (equivalente al que ya existe para
+    // Activos, hoy Bienes Varios no tenía ningún consolidado).
+    Route::get('/reportes/bienes-varios-general-pdf', function () {
+        $muni = Municipalidad::find(config('app.muni_id', 1));
+        $bienes = BienVario::with(['categoria', 'oficina', 'marcaInfo'])->get();
+
+        $pdf = Pdf::loadView('pdf.bienes_varios_general', [
+            'muni' => $muni,
+            'bienes' => $bienes,
+        ]);
+
+        return $pdf->stream('Bienes-Varios-' . now()->format('d-m-Y') . '.pdf');
+    })->name('reportes.bienes-varios-general.pdf');
+
+    // Reporte por Proveedor: cuánto se le ha comprado a cada uno, entre
+    // Activos y Bienes Varios.
+    Route::get('/reportes/por-proveedor-pdf', function () {
+        $muni = Municipalidad::find(config('app.muni_id', 1));
+
+        $proveedores = Proveedor::query()
+            ->withCount(['activos', 'bienesVarios'])
+            ->withSum('activos', 'costo_original')
+            ->withSum('bienesVarios', 'costo')
+            ->orderBy('nombre')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.por_proveedor', [
+            'muni' => $muni,
+            'proveedores' => $proveedores,
+        ]);
+
+        return $pdf->stream('Reporte-Proveedores-' . now()->format('d-m-Y') . '.pdf');
+    })->name('reportes.por-proveedor.pdf');
 
 
     // --- RUTAS DE MANTENIMIENTO INCREMENTAL (asumen que la app ya funciona) ---

@@ -4,11 +4,13 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BienVarioResource\Pages;
 use App\Models\BienVario;
+use App\Models\Municipalidad;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BienVarioResource extends Resource
 {
@@ -91,7 +93,27 @@ class BienVarioResource extends Resource
                 Tables\Columns\TextColumn::make('estado')->badge(),
             ])
             ->filters([])
-            ->actions([Tables\Actions\EditAction::make()]);
+            ->actions([Tables\Actions\EditAction::make()])
+            ->headerActions([
+                Tables\Actions\Action::make('exportarPdf')
+                    ->label('Reporte de Inventario')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->action(function (Tables\Contracts\HasTable $livewire) {
+                        $bienes = $livewire->getFilteredTableQuery()->get();
+
+                        $muni = Municipalidad::find(config('app.muni_id', 1));
+
+                        $pdf = Pdf::loadView('pdf.bienes_varios_general', [
+                            'bienes' => $bienes,
+                            'muni' => $muni,
+                        ]);
+
+                        return response()->streamDownload(function () use ($pdf) {
+                            echo $pdf->stream();
+                        }, "Bienes-Varios-" . now()->format('d-m-Y') . ".pdf");
+                    }),
+            ]);
     }
 
     public static function getPages(): array
