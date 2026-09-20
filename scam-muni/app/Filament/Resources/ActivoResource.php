@@ -239,6 +239,10 @@ class ActivoResource extends Resource
                             ->default(now())
                             ->required(),
 
+                        TextInput::make('acta_baja')
+                            ->label('No. de Acta')
+                            ->placeholder('Ej: ACTA-001-2026'),
+
                         Forms\Components\Textarea::make('motivo_baja')
                             ->label('Motivo de la baja')
                             ->required(),
@@ -247,6 +251,7 @@ class ActivoResource extends Resource
                         $record->update([
                             'es_baja' => true,
                             'fecha_baja' => $data['fecha_baja'],
+                            'acta_baja' => $data['acta_baja'],
                             'motivo_baja' => $data['motivo_baja'],
                         ]);
                     })
@@ -261,6 +266,7 @@ class ActivoResource extends Resource
                         $record->update([
                             'es_baja' => false,
                             'fecha_baja' => null,
+                            'acta_baja' => null,
                             'motivo_baja' => null,
                         ]);
                     })
@@ -302,13 +308,13 @@ class ActivoResource extends Resource
                             'filtrosDescripcion' => 'según los filtros activos en la tabla',
                         ]);
 
-                        // Nombre fijo por usuario: se sobrescribe en cada
-                        // apertura en vez de acumular archivos temporales.
-                        $ruta = "temp-reports/inventario-" . auth()->id() . ".pdf";
-                        \Illuminate\Support\Facades\Storage::disk('public')->put($ruta, $pdf->output());
-
+                        // Se embebe el PDF directo en la URL (data URI) en vez
+                        // de guardarlo en storage/public: en Railway (y varios
+                        // hostings) el disco es efímero y el symlink
+                        // public/storage no está garantizado, así que un
+                        // archivo guardado ahí puede dar 404 al servirlo.
                         return view('filament.modals.pdf-viewer', [
-                            'url' => \Illuminate\Support\Facades\Storage::disk('public')->url($ruta) . '?v=' . now()->timestamp,
+                            'url' => 'data:application/pdf;base64,' . base64_encode($pdf->output()),
                         ]);
                     })
                     ->modalSubmitAction(false)

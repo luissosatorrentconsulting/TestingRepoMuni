@@ -84,7 +84,49 @@ class ActionsSmokeTest extends TestCase
         $activo->refresh();
         $this->assertTrue($activo->es_baja);
         $this->assertNotNull($activo->fecha_baja);
+        $this->assertNull($activo->acta_baja, 'El No. de Acta es opcional: no pasarlo no debe dar error');
         $this->assertEquals('Ya no sirve', $activo->motivo_baja);
+    }
+
+    public function test_dar_de_baja_guarda_el_acta_cuando_se_llena_y_se_limpia_al_reactivar(): void
+    {
+        Municipalidad::create(['id' => 1, 'nombre' => 'Test', 'codigo_muni' => '910']);
+        $user = User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('x'), 'rol' => 'admin', 'municipalidad_id' => 1]);
+        $categoria = Categoria::create(['prefijo' => 'MOB', 'nombre' => 'Mobiliario', 'porcentaje_depreciacion' => 20]);
+        $activo = Activo::create([
+            'categoria_id' => $categoria->id,
+            'descripcion' => 'Impresora',
+            'estado' => 'BUENO',
+            'costo_original' => 800,
+            'fecha_compra' => now(),
+            'valor_desecho' => 0,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ListActivos::class)
+            ->callTableAction('baja', $activo, data: [
+                'fecha_baja' => now()->toDateString(),
+                'acta_baja' => 'ACTA-BAJA-001',
+                'motivo_baja' => 'Ya no enciende',
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $activo->refresh();
+        $this->assertEquals('ACTA-BAJA-001', $activo->acta_baja);
+
+        // El listado de Activos oculta los dados de baja por defecto (filtro
+        // "Activos Disponibles"), así que hay que pasar al filtro "Ver solo
+        // Bajas" para que la fila exista en la tabla y se pueda reactivar
+        // — igual que tendría que hacerlo un usuario real.
+        Livewire::test(ListActivos::class)
+            ->filterTable('es_baja', true)
+            ->callTableAction('reactivar', $activo)
+            ->assertHasNoTableActionErrors();
+
+        $activo->refresh();
+        $this->assertFalse($activo->es_baja);
+        $this->assertNull($activo->acta_baja, 'Al reactivar debe limpiarse el acta de baja anterior');
     }
 
     public function test_pdf_viewer_modals_render_without_errors(): void

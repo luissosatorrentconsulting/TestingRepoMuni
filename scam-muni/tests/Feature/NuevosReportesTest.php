@@ -16,7 +16,6 @@ use App\Models\User;
 use App\Filament\Resources\BienVarioResource\Pages\ListBienVarios;
 use App\Filament\Resources\ActivoResource\Pages\ListActivos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -166,15 +165,17 @@ class NuevosReportesTest extends TestCase
             ->callTableAction('exportarPdf')
             ->assertHasNoTableActionErrors();
 
-        // "Reporte de Inventario" en Activos: ahora abre en el visor modal
-        // (antes forzaba una descarga directa) y guarda el PDF en storage
-        // público para poder mostrarlo en el iframe.
-        Storage::fake('public');
-
-        Livewire::test(ListActivos::class)
-            ->callTableAction('exportarPdf')
+        // "Reporte de Inventario" en Activos: abre en el visor modal con el
+        // PDF embebido como data URI (NO guardado en storage/public: en
+        // Railway ese disco es efímero y sin el symlink de storage:link
+        // garantizado, un archivo guardado ahí puede dar 404 al servirlo —
+        // justo el bug que se reportó y que esta prueba deja blindado).
+        $resultado = Livewire::test(ListActivos::class)
+            ->mountTableAction('exportarPdf')
             ->assertHasNoTableActionErrors();
 
-        Storage::disk('public')->assertExists("temp-reports/inventario-{$user->id}.pdf");
+        $html = $resultado->html();
+        $this->assertStringContainsString('data:application/pdf;base64,', $html);
+        $this->assertStringNotContainsString('temp-reports', $html);
     }
 }

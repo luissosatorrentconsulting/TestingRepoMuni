@@ -18,7 +18,7 @@ class Activo extends Model
         'costo_original', 'fecha_compra', 'valor_desecho', 'es_baja',
         'marca_id', 'color_id', 'proveedor_id', 'estado', 'observaciones_activo',
         'numero_factura', 'numero_inventario', 'no_suma_inventario',
-        'fecha_baja', 'motivo_baja',
+        'fecha_baja', 'acta_baja', 'motivo_baja',
     ];
 
     protected $casts = [

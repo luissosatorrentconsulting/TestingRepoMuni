@@ -48,12 +48,13 @@
 <table class="main-table">
     <thead>
         <tr>
-            <th width="12%">Fecha Baja</th>
-            <th width="12%">Código</th>
-            <th width="24%">Descripción</th>
-            <th width="14%">Categoría</th>
-            <th width="12%">Costo (Q)</th>
-            <th width="26%">Motivo</th>
+            <th width="10%">Fecha Baja</th>
+            <th width="10%">No. Acta</th>
+            <th width="10%">Código</th>
+            <th width="20%">Descripción</th>
+            <th width="12%">Categoría</th>
+            <th width="10%">Costo (Q)</th>
+            <th width="28%">Motivo</th>
         </tr>
     </thead>
     <tbody>
@@ -62,6 +63,7 @@
             @php $total += $activo->costo_original; @endphp
             <tr>
                 <td class="text-center">{{ optional($activo->fecha_baja)->format('d/m/Y') ?? 'N/D' }}</td>
+                <td class="text-center">{{ $activo->acta_baja ?? 'S/N' }}</td>
                 <td class="text-center"><strong>{{ $activo->codigo_etiqueta }}</strong></td>
                 <td>{{ strtoupper($activo->descripcion) }}</td>
                 <td>{{ $activo->categoria->nombre ?? 'N/A' }}</td>
@@ -70,14 +72,14 @@
             </tr>
         @empty
             <tr>
-                <td colspan="6" align="center" style="padding: 20px; color: #666;">No hay bajas registradas en el período seleccionado.</td>
+                <td colspan="7" align="center" style="padding: 20px; color: #666;">No hay bajas registradas en el período seleccionado.</td>
             </tr>
         @endforelse
     </tbody>
     @if($activos->count())
         <tfoot>
             <tr class="total-row">
-                <td colspan="4" class="text-right">TOTAL ({{ $activos->count() }} bienes dados de baja)</td>
+                <td colspan="5" class="text-right">TOTAL ({{ $activos->count() }} bienes dados de baja)</td>
                 <td class="text-right" colspan="2">Q {{ number_format($total, 2) }}</td>
             </tr>
         </tfoot>

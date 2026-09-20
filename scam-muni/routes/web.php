@@ -555,6 +555,27 @@ Route::middleware('auth')->group(function () {
         return count($reporte) > 0 ? implode("<br>", $reporte) : "La base de datos ya está al día (fase 3).";
     });
 
+    // RUTA DE MANTENIMIENTO: Fase 4 — No. de acta al dar de baja un activo.
+    Route::get('/fix-db-fase4', function () {
+        $reporte = [];
+
+        Schema::table('activos', function (Blueprint $table) use (&$reporte) {
+            if (!Schema::hasColumn('activos', 'acta_baja')) {
+                $table->string('acta_baja')->nullable()->after('fecha_baja');
+                $reporte[] = "✅ Columna 'acta_baja' agregada a activos.";
+            }
+        });
+
+        try {
+            Artisan::call('filament:optimize-clear');
+            $reporte[] = "⚡ Caché de Filament limpiada.";
+        } catch (\Exception $e) {
+            $reporte[] = "⚠️ Error en caché: " . $e->getMessage();
+        }
+
+        return count($reporte) > 0 ? implode("<br>", $reporte) : "La base de datos ya está al día (fase 4).";
+    });
+
     // Crea (o actualiza) tu cuenta de Super Admin: puede elegir con qué
     // municipalidad trabajar desde "Cambiar Municipalidad" en vez de estar
     // atada a una sola. Correlo una sola vez; después cambiá la contraseña.
