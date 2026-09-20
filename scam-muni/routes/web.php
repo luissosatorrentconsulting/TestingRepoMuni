@@ -103,7 +103,7 @@ Route::middleware('auth')->group(function () {
 
         $traslados = \App\Models\MovimientoActivo::where('entregado_por_id', $empleado->id)
             ->orWhere('recibido_por_id', $empleado->id)
-            ->with(['activo.categoria', 'entregador', 'receptor'])
+            ->with(['activo.categoria', 'activo.asignacionActiva', 'entregador', 'receptor'])
             ->orderBy('fecha_movimiento', 'desc')
             ->get();
 

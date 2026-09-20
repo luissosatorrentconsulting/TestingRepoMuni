@@ -94,10 +94,17 @@
         <tbody>
             @php $subTotal = 0; @endphp
             @foreach($items as $t)
-                @php 
+                @php
+                    // Solo cuenta para el total si el activo TODAVÍA está a
+                    // nombre de este empleado. Un traslado histórico (donde
+                    // ya lo entregó a otra persona) queda visible para el
+                    // registro, pero no debe sumar a su responsabilidad actual.
+                    $vigente = $t->activo->asignacionActiva?->empleado_id === $empleado->id;
                     $valor = $t->activo->costo_original;
-                    $subTotal += $valor;
-                    $granTotal += $valor;
+                    if ($vigente) {
+                        $subTotal += $valor;
+                        $granTotal += $valor;
+                    }
                 @endphp
                 <tr>
                     <td class="text-center"><strong>{{ $t->activo->codigo_etiqueta }}</strong></td>
@@ -106,7 +113,7 @@
                     <td class="text-center">{{ strtoupper($t->activo->modelo ?? 'N/A') }}</td>
                     <td class="text-center">{{ strtoupper($t->activo->colorInfo->nombre ?? 'N/A') }}</td>
                     <td class="text-center">{{ $t->fecha_movimiento->format('d/m/Y') }}</td>
-                    <td class="text-right">{{ number_format($valor, 2) }}</td>
+                    <td class="text-right">{{ $vigente ? number_format($valor, 2) : '—' }}</td>
                     <td class="text-right">0.00</td>
                     <td class="text-center">{{ strtoupper($t->receptor->nombre_completo ?? 'N/A') }}</td>
                 </tr>
