@@ -79,7 +79,11 @@ Route::middleware('auth')->group(function () {
         $muni = Municipalidad::find(config('app.muni_id', 1));
         $empleado->load(['puesto_oficial.oficina.departamento']);
 
-        $activos = Activo::whereHas('asignaciones', function ($query) use ($empleado) {
+        // OJO: filtrar por 'asignacionActiva' (la vigente), no por
+        // 'asignaciones' (todo el historial) — si no, un empleado sigue
+        // apareciendo en el resguardo de un bien que ya se le reasignó a
+        // otra persona, porque alguna vez lo tuvo.
+        $activos = Activo::whereHas('asignacionActiva', function ($query) use ($empleado) {
             $query->where('empleado_id', $empleado->id);
         })->where('es_baja', false)->get();
 
@@ -125,17 +129,52 @@ Route::middleware('auth')->group(function () {
         return $pdf->stream("Acta-{$asignacion->id}.pdf");
     })->name('asignacion.acta.pdf');
 
-    // Reporte General de Inventario, sin depender de los filtros de la tabla
-    // (la acción "Reporte de Inventario" dentro de Activos sigue existiendo
-    // tal cual y respeta lo que esté filtrado ahí; esta ruta es la versión
-    // "todo el inventario" para usar desde la Central de Reportes).
-    Route::get('/reportes/inventario-general-pdf', function () {
+    // Reporte General de Inventario: acepta filtros opcionales por
+    // ?categoria_id=, ?oficina_id= y ?empleado_id=, y agrupa por categoría.
+    Route::get('/reportes/inventario-general-pdf', function (\Illuminate\Http\Request $request) {
         $muni = Municipalidad::find(config('app.muni_id', 1));
-        $activos = Activo::where('es_baja', false)->get();
+
+        $categoriaId = $request->query('categoria_id');
+        $oficinaId = $request->query('oficina_id');
+        $empleadoId = $request->query('empleado_id');
+
+        $activos = Activo::where('es_baja', false)
+            ->when($categoriaId, fn ($q) => $q->where('categoria_id', $categoriaId))
+            ->when($empleadoId, fn ($q) => $q->whereHas(
+                'asignacionActiva',
+                fn ($q2) => $q2->where('empleado_id', $empleadoId)
+            ))
+            ->when($oficinaId, fn ($q) => $q->whereHas(
+                'asignacionActiva.empleado.puesto_oficial.oficina',
+                fn ($q2) => $q2->where('oficinas.id', $oficinaId)
+            ))
+            ->with([
+                'categoria',
+                'marcaInfo',
+                'colorInfo',
+                'proveedor',
+                'asignacionActiva.empleado.puesto_oficial.oficina',
+            ])
+            ->get();
+
+        $grupos = $activos->groupBy(fn (Activo $activo) => $activo->categoria->nombre ?? 'Sin Categoría')
+            ->sortKeys();
+
+        $filtros = [];
+        if ($categoriaId) {
+            $filtros[] = 'Categoría: ' . (\App\Models\Categoria::find($categoriaId)?->nombre ?? '—');
+        }
+        if ($oficinaId) {
+            $filtros[] = 'Oficina: ' . (\App\Models\Oficina::find($oficinaId)?->nombre ?? '—');
+        }
+        if ($empleadoId) {
+            $filtros[] = 'Empleado: ' . (\App\Models\Empleado::find($empleadoId)?->nombre_completo ?? '—');
+        }
 
         $pdf = Pdf::loadView('pdf.inventario_general', [
-            'activos' => $activos,
+            'grupos' => $grupos,
             'muni' => $muni,
+            'filtrosDescripcion' => implode(' · ', $filtros),
         ]);
 
         return $pdf->stream('Inventario-' . now()->format('d-m-Y') . '.pdf');

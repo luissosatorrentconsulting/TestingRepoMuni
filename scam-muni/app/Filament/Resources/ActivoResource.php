@@ -67,8 +67,7 @@ class ActivoResource extends Resource
                                 Forms\Components\TextInput::make('nombre')
                                     ->label('Nombre de la Marca')
                                     ->required(),
-                            ])
-                            ->required(),
+                            ]),
 
                         TextInput::make('modelo')
                             ->label('Modelo'),
@@ -86,8 +85,7 @@ class ActivoResource extends Resource
                                 Forms\Components\TextInput::make('nombre')
                                     ->label('Nombre del Color')
                                     ->required(),
-                            ])
-                            ->required(),
+                            ]),
 
                         Forms\Components\Select::make('estado')
                             ->label('Estado Físico')
@@ -280,20 +278,42 @@ class ActivoResource extends Resource
                     ->label('Reporte de Inventario')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('success')
-                    ->action(function (Tables\Contracts\HasTable $livewire) {
-                        $activos = $livewire->getFilteredTableQuery()->get();
-                        
+                    ->modalHeading('Reporte General de Inventario')
+                    ->modalContent(function (Tables\Contracts\HasTable $livewire) {
+                        $activos = $livewire->getFilteredTableQuery()
+                            ->with([
+                                'categoria',
+                                'marcaInfo',
+                                'colorInfo',
+                                'proveedor',
+                                'asignacionActiva.empleado.puesto_oficial.oficina',
+                            ])
+                            ->get();
+
+                        $grupos = $activos
+                            ->groupBy(fn (Activo $activo) => $activo->categoria->nombre ?? 'Sin Categoría')
+                            ->sortKeys();
+
                         $muni = Municipalidad::find(config('app.muni_id', 1));
 
                         $pdf = Pdf::loadView('pdf.inventario_general', [
-                            'activos' => $activos,
+                            'grupos' => $grupos,
                             'muni' => $muni,
+                            'filtrosDescripcion' => 'según los filtros activos en la tabla',
                         ]);
 
-                        return response()->streamDownload(function () use ($pdf) {
-                            echo $pdf->stream();
-                        }, "Inventario-" . now()->format('d-m-Y') . ".pdf");
-                    }),
+                        // Nombre fijo por usuario: se sobrescribe en cada
+                        // apertura en vez de acumular archivos temporales.
+                        $ruta = "temp-reports/inventario-" . auth()->id() . ".pdf";
+                        \Illuminate\Support\Facades\Storage::disk('public')->put($ruta, $pdf->output());
+
+                        return view('filament.modals.pdf-viewer', [
+                            'url' => \Illuminate\Support\Facades\Storage::disk('public')->url($ruta) . '?v=' . now()->timestamp,
+                        ]);
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar')
+                    ->modalWidth('7xl'),
             ]);
     }
 

@@ -28,6 +28,8 @@ class AsignacionResource extends Resource
                         // Solo mostrará activos de MI municipalidad gracias al GlobalScope,
                         // y excluye los que ya están de baja o tienen una asignación vigente
                         // (para no poder "reasignar" por accidente desde este formulario).
+                        // Tampoco se puede cambiar al editar, por la misma razón que el
+                        // empleado: cambiar de bien es una reasignación, no una corrección.
                         Forms\Components\Select::make('activo_id')
                             ->relationship(
                                 'activo',
@@ -40,15 +42,26 @@ class AsignacionResource extends Resource
                             ->label('Activo / Bien')
                             ->required()
                             ->searchable(['descripcion', 'codigo_etiqueta'])
-                            ->preload(),
+                            ->preload()
+                            ->disabled(fn (string $operation): bool => $operation === 'edit')
+                            ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
 
-                        // Solo mostrará empleados de MI municipalidad
+                        // Solo mostrará empleados de MI municipalidad. No se
+                        // puede cambiar al editar: eso sería una reasignación
+                        // "silenciosa" sin pasar por el flujo de Reasignar
+                        // (que cierra la asignación anterior y deja registro
+                        // en el historial de movimientos).
                         Forms\Components\Select::make('empleado_id')
                             ->relationship('empleado', 'nombre_completo')
                             ->label('Empleado Responsable')
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->disabled(fn (string $operation): bool => $operation === 'edit')
+                            ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                            ->helperText(fn (string $operation): ?string => $operation === 'edit'
+                                ? 'Para cambiar de responsable usá el botón "Reasignar" en el listado.'
+                                : null),
 
                         Forms\Components\DatePicker::make('fecha_asignacion')
                             ->label('Fecha de Asignación')
@@ -72,9 +85,9 @@ class AsignacionResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('activo.codigo_etiqueta')->label('Código'),
-                Tables\Columns\TextColumn::make('activo.descripcion')->label('Activo'),
-                Tables\Columns\TextColumn::make('empleado.nombre_completo')->label('Responsable'),
+                Tables\Columns\TextColumn::make('activo.codigo_etiqueta')->label('Código')->searchable(),
+                Tables\Columns\TextColumn::make('activo.descripcion')->label('Activo')->searchable(),
+                Tables\Columns\TextColumn::make('empleado.nombre_completo')->label('Responsable')->searchable(),
                 Tables\Columns\TextColumn::make('fecha_asignacion')->label('Fecha')->date('d/m/Y'),
                 Tables\Columns\IconColumn::make('activa')->label('Vigente')->boolean(),
             ])

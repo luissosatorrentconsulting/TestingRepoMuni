@@ -77,6 +77,22 @@
             </x-filament::section>
 
             <x-filament::section>
+                <x-slot name="heading">Inventario General (con filtros)</x-slot>
+
+                @php $reporte = $this->getReporteInventarioGeneral(); @endphp
+                <div class="flex flex-wrap gap-3">
+                    <x-filament::button
+                        type="button"
+                        icon="heroicon-o-eye"
+                        color="success"
+                        x-on:click="pdfUrl = {{ \Illuminate\Support\Js::from(route($reporte['route'], $reporte['params'])) }}; pdfLabel = {{ \Illuminate\Support\Js::from($reporte['label']) }}"
+                    >
+                        Ver Inventario General
+                    </x-filament::button>
+                </div>
+            </x-filament::section>
+
+            <x-filament::section>
                 <x-slot name="heading">Bajas del Período</x-slot>
 
                 @php $reporte = $this->getReporteBajas(); @endphp

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ActivoResource\RelationManagers;
 
+use App\Models\Asignacion;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -16,11 +17,24 @@ class AsignacionesRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
+        // Solo permite corregir datos de la asignación en sí (acta, fecha,
+        // observaciones). Cambiar el bien o el responsable es una
+        // reasignación, no una corrección: eso se hace con "Reasignar".
+        // (Antes este formulario editaba 'empleado.nombre_completo', que en
+        // realidad le cambiaba el nombre al Empleado en todo el sistema.)
         return $form
             ->schema([
-                Forms\Components\TextInput::make('empleado.nombre_completo')
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\DatePicker::make('fecha_asignacion')
+                    ->label('Fecha de Asignación')
+                    ->required(),
+
+                Forms\Components\TextInput::make('documento_respaldo')
+                    ->label('No. de Acta')
+                    ->placeholder('Ej: ACTA-001-2026'),
+
+                Forms\Components\Textarea::make('observaciones')
+                    ->label('Motivo / Observaciones')
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -69,6 +83,43 @@ class AsignacionesRelationManager extends RelationManager
         ->url(fn ($record): string => \App\Filament\Resources\EmpleadoResource::getUrl('edit', ['record' => $record->empleado_id])),
     
     Tables\Actions\EditAction::make()->label('Corregir'),
+
+    Tables\Actions\Action::make('reasignar')
+        ->label('Reasignar')
+        ->icon('heroicon-o-arrow-path-rounded-square')
+        ->color('warning')
+        ->visible(fn (Asignacion $record): bool => (bool) $record->activa)
+        ->form([
+            Forms\Components\Select::make('empleado_id')
+                ->relationship('empleado', 'nombre_completo')
+                ->label('Nuevo Responsable')
+                ->required()
+                ->searchable()
+                ->preload(),
+
+            Forms\Components\DatePicker::make('fecha_asignacion')
+                ->label('Fecha de Reasignación')
+                ->default(now())
+                ->required(),
+
+            Forms\Components\TextInput::make('documento_respaldo')
+                ->label('No. de Acta')
+                ->required(),
+
+            Forms\Components\Textarea::make('observaciones')
+                ->label('Motivo de la Reasignación')
+                ->required()
+                ->columnSpanFull(),
+        ])
+        ->action(function (Asignacion $record, array $data): void {
+            Asignacion::create([
+                'activo_id' => $record->activo_id,
+                'empleado_id' => $data['empleado_id'],
+                'fecha_asignacion' => $data['fecha_asignacion'],
+                'documento_respaldo' => $data['documento_respaldo'],
+                'observaciones' => $data['observaciones'],
+            ]);
+        }),
 ])
         ->bulkActions([]);
 }

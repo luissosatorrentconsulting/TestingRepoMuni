@@ -14,7 +14,9 @@ use App\Models\Puesto;
 use App\Models\Asignacion;
 use App\Models\User;
 use App\Filament\Resources\BienVarioResource\Pages\ListBienVarios;
+use App\Filament\Resources\ActivoResource\Pages\ListActivos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -116,6 +118,37 @@ class NuevosReportesTest extends TestCase
         $this->get('/reportes/por-proveedor-pdf')
             ->assertOk();
 
+        // Inventario General: sin filtros trae los 2 vigentes (asignado + bodega).
+        $this->get('/reportes/inventario-general-pdf')
+            ->assertOk();
+
+        // Filtrado por categoría (la única que existe): sigue trayendo los 2.
+        $this->get("/reportes/inventario-general-pdf?categoria_id={$categoria->id}")
+            ->assertOk();
+
+        // Filtrado por oficina: solo debe traer el activo ASIGNADO a alguien
+        // de esa oficina, no el que está en bodega sin asignar.
+        $this->get("/reportes/inventario-general-pdf?oficina_id={$oficina->id}")
+            ->assertOk();
+
+        // Filtrado por empleado: mismo criterio, solo lo que él tiene asignado.
+        $this->get("/reportes/inventario-general-pdf?empleado_id={$empleado->id}")
+            ->assertOk();
+
+        // Verificación real de que el filtro EXCLUYE lo que no corresponde
+        // (mismo criterio whereHas que usa la ruta, no solo que no truene).
+        $porOficina = Activo::where('es_baja', false)
+            ->whereHas('asignacionActiva.empleado.puesto_oficial.oficina', fn ($q) => $q->where('oficinas.id', $oficina->id))
+            ->get();
+        $this->assertCount(1, $porOficina, 'Solo el activo asignado debe quedar, no el de bodega');
+        $this->assertEquals('Laptop asignada', $porOficina->first()->descripcion);
+
+        $porEmpleado = Activo::where('es_baja', false)
+            ->whereHas('asignacionActiva', fn ($q) => $q->where('empleado_id', $empleado->id))
+            ->get();
+        $this->assertCount(1, $porEmpleado);
+        $this->assertEquals('Laptop asignada', $porEmpleado->first()->descripcion);
+
         // Verificación de contenido real, no solo status 200.
         $this->assertEquals(1, Activo::disponibles()->count());
         $this->assertEquals(1, Activo::where('es_baja', true)->count());
@@ -132,5 +165,16 @@ class NuevosReportesTest extends TestCase
         Livewire::test(ListBienVarios::class)
             ->callTableAction('exportarPdf')
             ->assertHasNoTableActionErrors();
+
+        // "Reporte de Inventario" en Activos: ahora abre en el visor modal
+        // (antes forzaba una descarga directa) y guarda el PDF en storage
+        // público para poder mostrarlo en el iframe.
+        Storage::fake('public');
+
+        Livewire::test(ListActivos::class)
+            ->callTableAction('exportarPdf')
+            ->assertHasNoTableActionErrors();
+
+        Storage::disk('public')->assertExists("temp-reports/inventario-{$user->id}.pdf");
     }
 }
